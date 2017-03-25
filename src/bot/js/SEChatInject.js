@@ -18,7 +18,9 @@ window.chat_ex = {
 		if(!roomid){
 			roomid=CHAT.CURRENT_ROOM_ID;
 		}
+		$.ajax({ "type": "POST",
 			"url": ("http://"+document.domain+"/chats/"+roomid+"/messages/new"),
+			"data": fkey({ "text": msgtext }),
 			"dataType": "json", async:false
 			});
 	},
@@ -26,6 +28,9 @@ window.chat_ex = {
 		if(!roomid){
 			roomid=CHAT.CURRENT_ROOM_ID;
 		}
+		return $.ajax({ "type": "POST",
+			"url": ("http://"+document.domain+"/chats/"+roomid+"/events/"),
+			"data": fkey({ "mode": "messages", "msgCount": "5" }),
 			"contentType":"application/json; charset=utf-8",
 			"dataType": "json", async:false
 			}).responseText;
