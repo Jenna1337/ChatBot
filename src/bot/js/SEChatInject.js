@@ -3,26 +3,32 @@ window.chat_ex = {
 	cmds: {
 		"test": function(args){
 			chat_ex.sendMessage("Response");
-		}
+		},
 		"help": function(args){
 			var helptext="Commands: help";
 			for(var cmdf in chat_ex.cmds){
 				if(cmdf!="help"){
-					helptext+=", 
+					helptext+=", "+cmdf;
 				}
 			}
 			chat_ex.sendMessage(helptext);
 		}
 	},
 	sendMessage: function(msgtext, roomid){
-		if(!roomid)
+		if(!roomid){
 			roomid=CHAT.CURRENT_ROOM_ID;
-		$.ajax({ "type": "POST", "url": ("http://"+document.domain+"/chats/"+roomid+"/messages/new"), "data": fkey({ "text": msgtext }), "dataType": "json"});
+		}
+			"url": ("http://"+document.domain+"/chats/"+roomid+"/messages/new"),
+			"dataType": "json", async:false
+			});
 	},
 	getMessages: function(roomid){
-		if(!roomid)
+		if(!roomid){
 			roomid=CHAT.CURRENT_ROOM_ID;
-		return $.ajax({ "type": "POST", "url": ("http://"+document.domain+"/chats/"+roomid+"/events/"), "data": fkey({ "mode": "messages", "msgCount": "1" }), "dataType": "text", async:false}).responseText;
+		}
+			"contentType":"application/json; charset=utf-8",
+			"dataType": "json", async:false
+			}).responseText;
 	},
 	parseMessages: function(msgsjson){
 		var evts = JSON.parse(msgsjson).events;
