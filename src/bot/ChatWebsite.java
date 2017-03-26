@@ -5,7 +5,8 @@ import java.net.URL;
 
 public enum ChatWebsite
 {
-	StackExchange("chat.stackexchange.com"),
+	STACKEXCHANGE("chat.stackexchange.com"),
+	STACKOVERFLOW("chat.stackoverflow.com")
 	;
 	private final URL domain;
 	private ChatWebsite(String url)
