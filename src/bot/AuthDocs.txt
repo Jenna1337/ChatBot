@@ -1,0 +1,42 @@
+
+login:
+Method: POST
+request cookie:
+	__qca
+	_ga
+	_gat
+	_gat_pageData
+	fkey
+	prov
+Params:
+	fkey
+	ssrc:"head"
+	email
+	password
+	oauth_version
+		Google+: "2.0"
+	oauth_server
+		Google+: "https://accounts.google.com/o/oauth2/auth"
+	openid_username
+	openid_identifier
+
+https://stackoverflow.com/users/oauth/google?code
+method: GET
+response cookie:
+	uauth
+	acct
+
+
+
+sandbox:
+Method: GET
+request cookie:
+	__qca: same as login __qca
+	_ga: same as login _ga
+	acct: from https://stackoverflow.com/users/oauth/google
+	chatusr
+	prov: same as login prov
+
+
+
+

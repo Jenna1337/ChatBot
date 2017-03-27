@@ -1,0 +1,112 @@
+
+invite user:
+  $.ajax({
+    'type': 'POST',
+    'url': '/users/invite',
+    'data': fkey({
+      'UserId': e,
+      'RoomId': t
+    }),
+    'success': function (e) {
+      n && n(e)
+    },
+    'dataType': 'text',
+    'error': function (e, t) {
+      n && n('error' == t ? 409 == e.status ? e.responseText : 'An error occurred performing this action' : t)
+    }
+  })
+
+
+
+action == 'delete' || 'flag' || 'mod' || 'owner-star' || 'star'
+
+messageActionById(messageID, action, null, callback1, callback2)
+
+function messageActionById(e, t, n, s, i) {
+  n || (n = {
+  }),
+  $.ajax({
+    'type': 'POST',
+    'url': '/messages/' + e + '/' + t,
+    'data': fkey(n),
+    'success': function (e) {
+      s ? s(e)  : 'ok' != e && i && i(e || GENERIC_ERROR)
+    },
+    'dataType': 'json',
+    'error': function (e, t) {
+      var n = 'error' == t ? 409 == e.status ? e.responseText : GENERIC_ERROR : t;
+      s ? s(n)  : i && i(n)
+    }
+  })
+}
+
+edit message:
+      $.ajax({
+        'type': 'POST',
+        'url': '/messages/' + t,
+        'data': fkey({
+          'text': e
+        }),
+        'success': function () {
+          var e = PERMALINK(t);
+          location.href.search(e) >= 0 ? window.location.reload(!0)  : window.location.href = e
+        },
+        'error': function () {
+          m('Editing the message has failed.'),
+          s.hide()
+        }
+      })
+
+send message:
+  $.ajax({
+    'type': 'POST',
+    'url': t,
+    'data': fkey({
+      'text': e.data('source')
+    }),
+    'success': s,
+    'dataType': 'json',
+    'error': _t(e, a)
+  })
+
+bookmark conversation:
+    $.ajax({
+      'type': 'POST',
+      'url': '/conversation/new',
+      'data': fkey({
+        'roomId': e,
+        'firstMessageId': m[0],
+        'lastMessageId': m[1],
+        'title': l.val()
+      }),
+      'success': function (e) {
+        e.ok ? (n(e.message), r(), t(!1))  : u.text(e).css('color', 'red'),
+        g.hide(),
+        u.show()
+      },
+      'error': function (e) {
+        var t = GENERIC_ERROR;
+        e.responseText.length < 50 && (t = e.responseText),
+        u.text(t).css('color', 'red'),
+        g.hide(),
+        u.show()
+      },
+      'dataType': 'json'
+    })
+
+
+
+
+
+
+
+Eggs.load:
+  $.ajax({
+    'url': n,
+    'success': loaded,
+    'dataType': 'script',
+    'cache': !0
+  })
+
+
+
