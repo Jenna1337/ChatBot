@@ -16,6 +16,14 @@ invite user:
     }
   })
 
+get message MESSAGE_ID: 
+  $.ajax({
+    "type":"GET",
+    "url":"https://chat.stackoverflow.com/messages/1/"+MESSAGE_ID,
+    "success":function(n) {
+      console.log(n)
+    }
+  })
 
 
 action == 'delete' || 'flag' || 'mod' || 'owner-star' || 'star'
