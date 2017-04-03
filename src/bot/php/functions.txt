@@ -20,6 +20,7 @@ get message MESSAGE_ID:
   $.ajax({
     "type":"GET",
     "url":"https://chat.stackoverflow.com/messages/1/"+MESSAGE_ID,
+    //This url works also: "https://chat.stackoverflow.com/message/"+MESSAGE_ID
     "success":function(n) {
       console.log(n)
     }
