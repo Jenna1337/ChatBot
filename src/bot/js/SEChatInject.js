@@ -21,7 +21,7 @@ window.chat_ex = {
 		$.ajax({ "type": "POST",
 			"url": ("http://"+document.domain+"/chats/"+roomid+"/messages/new"),
 			"data": fkey({ "text": msgtext }),
-			"dataType": "json", async:false
+			"dataType": "json", async:true
 			});
 	},
 	getMessages: function(roomid){
@@ -30,16 +30,18 @@ window.chat_ex = {
 		}
 		return $.ajax({ "type": "POST",
 			"url": ("http://"+document.domain+"/chats/"+roomid+"/events/"),
-			"data": fkey({ "mode": "messages", "msgCount": "5" }),
+			"data": fkey({ "since": mn, "mode": "Messages", "msgCount": "5" }),
 			"contentType":"application/json; charset=utf-8",
-			"dataType": "json", async:false
+			"dataType": "json",
+			async:true,
+			'success': function(roomid){
+				var evts = JSON.parse(msgsjson).events;
+				for(var i=0;i<evts.length;++i){
+					this.parseMessage(evts[i]);
+				}
 			}).responseText;
 	},
-	parseMessages: function(msgsjson){
-		var evts = JSON.parse(msgsjson).events;
-		for(var i=0;i<evts.length;++i){
-			this.parseMessage(evts[i]);
-		}
+	parseMessages: 
 	},
 	parseMessage: function(msgjson){
 		var event_type = msgjson.event_type;
