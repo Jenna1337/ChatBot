@@ -1,31 +1,29 @@
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.Properties;
 import bot.ChatBot;
-import bot.ChatMessage;
-import bot.MessageList;
+import bot.ChatEvent;
+import bot.ChatEventList;
 
 public class Main
 {
-	public static void main(String[] args) throws IOException
+	public static void main(String[] args) throws Exception
 	{
 		Properties props = new Properties();
 		FileReader reader = new FileReader("bot.properties");
 		props.load(reader);
 		reader.close();
 		String[] strings = props.getProperty("ROOMS", "1").split("\\D");
-		Integer[] rooms = new Integer[strings.length];
+		Long[] rooms = new Long[strings.length];
 		for(int i=0;i<rooms.length;++i)
-			rooms[i] = Integer.parseInt(strings[i]);
+			rooms[i] = Long.parseLong(strings[i]);
 		ChatBot bot = new ChatBot(props.getProperty("LOGIN-EMAIL"),
 				props.getProperty("PASSWORD"),
 				props.getProperty("TRIGGER"),
 				rooms
 				);
 		//bot.putMessage(138769, "ChatBot online.");
-		MessageList messages = bot.getMessages();
-		for(ChatMessage message : messages){
-			System.out.println(message);
-		}
+		ChatEventList eventlist = bot.getChatEvents();
+		for(ChatEvent event : eventlist)
+			System.out.println(event);
 	}
 }

@@ -1,29 +1,25 @@
 package bot;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.Socket;
-import java.net.URLEncoder;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.net.ssl.HttpsURLConnection;
-import static bot.WebRequest.*;
+import javax.security.sasl.AuthenticationException;
+import static bot.Utils.search;
+import static bot.Utils.urlencode;
+import static bot.WebRequest.GET;
+import static bot.WebRequest.POST;
 
 public class ChatIO
 {
 	private volatile String fkey;
 	
-	public ChatIO(String username, String password)
+	public ChatIO(String username, String password) throws AuthenticationException
 	{
 		login(username, password);
 	}
-	/**
-	 * 
-	 * @param email
-	 * @param password
-	 * @return The cookies that were set
-	 */
-	private void login(String email, String password)
+	private void login(String email, String password) throws AuthenticationException
 	{
 		try
 		{
@@ -42,7 +38,7 @@ public class ChatIO
 			WebRequest.setDefaultHeaders(headers);
 			String response_text = GET("https://stackoverflow.com/users/login?ssrc=head&returnurl=https%3a%2f%2fstackoverflow.com%2f");
 			
-			String fkey = search("name=\""+"fkey"+"\"\\s+value=\"([^\"]+)\"", response_text);
+			String fkey = search("name=\"fkey\"\\s+value=\"([^\"]+)\"", response_text);
 			String post_data = urlencode(new String[][]{
 				{"email", email},
 				{"fkey", fkey},
@@ -60,91 +56,78 @@ public class ChatIO
 		}
 		catch(Exception e)
 		{
-			throw new Error(e);
+			throw new AuthenticationException("Failed to login", e);
 		}
 	}
-	private static String urlencode(String[] mapping)
-	{
-		return urlencode(new String[][]{mapping});
-	}
-	private static String urlencode(String[][] map)
+	public void logout() throws AuthenticationException
 	{
 		try
 		{
-			String encoded = "";
-			for(int i=0;i<map.length;++i){
-				String[] parmap = map[i];
-				if(parmap.length!=2)
-					throw new IllegalArgumentException("Invalid parameter mapping "+java.util.Arrays.deepToString(parmap));
-				//TODO
-				encoded += parmap[0] + "=" + 
-						URLEncoder.encode(parmap[1], "UTF-8") +
-						(i+1<map.length ? "&" : "");
-			}
-			return encoded;
-		}
-		catch(UnsupportedEncodingException e)
-		{
-			throw new InternalError(e);
-		}
-	}
-	/**
-	 * 
-	 * @param regex
-	 * @param in
-	 * @return The match in <code>in</code> for the first group in <code>regex</code>.
-	 * @throws IllegalArgumentException  If no match was found or if there is no capturing group in the regex
-	 */
-	private static String search(String regex, String in)
-	{
-		try
-		{
-			Pattern p = Pattern.compile(regex);
-			Matcher m = p.matcher(in);
-			m.find();
-			return m.group(1);
-		}
-		catch(Exception e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-	}
-	public MessageList getMessages(int roomid, int msgCount)
-	{
-		try
-		{
-			String rawmessages = POST("https://chat.stackoverflow.com/chats/"+roomid+"/events", urlencode(new String[][]{
-				{"mode", "Messages"},
-				{"msgCount", ""+msgCount}
-			}));
-			return new MessageList(rawmessages);
-		}
-		catch(Exception e)
-		{
-			throw new IllegalArgumentException("Failed to read messages from room id "+roomid, e);
-		}
-	}
-	public void doSockets(int roomid)
-	{
-		try
-		{
-			String post_data = urlencode(new String[][]{
+			String response_text = GET("https://stackoverflow.com/users/logout");
+			String fkey = search("name=\"fkey\"\\s+value=\"([^\"]+)\"", response_text);
+			POST("https://stackoverflow.com/users/logout", urlencode(new String[][]{
 				{"fkey", fkey},
-				{"roomid", ""+roomid}
-			});
-			POST("https://chat.stackoverflow.com/ws-auth", post_data);
-			Socket sock = HttpsURLConnection.getDefaultSSLSocketFactory().createSocket("chat.sockets.overflow.com", 80);
-			// I don't even know if this is correct :/
-			String response = GET("https://chat.sockets.stackexchange.com/events/"+roomid+"/"+fkey);
-			//TODO
+				{"returnUrl", "https%3A%2F%2Fstackoverflow.com%2F"}
+			}));
 		}
-		catch(IOException e)
+		catch(Exception e)
+		{
+			throw new AuthenticationException("Failed to logout", e);
+		}
+	}
+	private static volatile String t;
+	public ChatEventList getChatEvents(List<Long> rooms)
+	{
+		try
+		{
+			String response = POST("https://chat.stackoverflow.com/events", urlencode(new String[][]{
+				{"fkey", fkey},
+				{"r1", t},
+				{"r139", t},
+				{"r138769", t},
+			}));
+			System.out.println(response);
+			try
+			{
+				t = search("\"t\"\\:(\\d+)", response);
+			}
+			catch(IllegalArgumentException iae)
+			{
+			}
+			finally
+			{
+				try
+				{
+					Thread.sleep(10000);
+				}
+				catch(InterruptedException ie)
+				{
+					ie.printStackTrace();
+				}
+			}
+			try
+			{
+				Pattern p = Pattern.compile("\"e\"\\:\\[([^\\]]+)");
+				Matcher m = p.matcher(response);
+				List<String> eventlists = new LinkedList<String>();
+				while(m.find())
+					eventlists.add(m.group(1));
+				return new ChatEventList(eventlists);
+				//TODO
+			}
+			catch(Exception e)
+			{
+				//No events
+			}
+		}
+		catch(IOException ioe)
 		{
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			ioe.printStackTrace();
 		}
+		return null;
 	}
-	public void putMessage(int roomid, String message)
+	public void putMessage(long roomid, String message)
 	{
 		try
 		{

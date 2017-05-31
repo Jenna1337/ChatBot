@@ -1,14 +1,14 @@
 package bot;
 
 import java.util.List;
+import javax.security.sasl.AuthenticationException;
 
 public class ChatBot
 {
-	private final int msgCount = 100;
 	private final ChatIO chatio;
 	private final String trigger;
-	private List<Integer> rooms;
-	public ChatBot(String login, String password, String trigger, Integer... rooms)
+	private List<Long> rooms;
+	public ChatBot(String login, String password, String trigger, Long... rooms) throws AuthenticationException
 	{
 		this.chatio = new ChatIO(login, password);
 		this.trigger = trigger;
@@ -19,20 +19,14 @@ public class ChatBot
 	{
 		return trigger;
 	}
-	public void putMessage(int roomid, String message)
+	public void putMessage(long roomid, String message)
 	{
 		chatio.putMessage(roomid, message);
 	}
-	public MessageList getMessages()
+	public ChatEventList getChatEvents()
 	{
-		MessageList messages = new MessageList();
-		for(int room_id : rooms)
-			messages.addAll(getMessages(room_id));
+		ChatEventList messages = chatio.getChatEvents(rooms);
 		return messages;
-	}
-	public MessageList getMessages(int roomid)
-	{
-		return chatio.getMessages(roomid, msgCount);
 	}
 }
 
