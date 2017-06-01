@@ -1,8 +1,8 @@
 import java.io.FileReader;
 import java.util.Properties;
 import bot.ChatBot;
-import bot.ChatEvent;
-import bot.ChatEventList;
+import bot.events.ChatEvent;
+import bot.events.ChatEventList;
 
 public class Main
 {
@@ -25,5 +25,13 @@ public class Main
 		ChatEventList eventlist = bot.getChatEvents();
 		for(ChatEvent event : eventlist)
 			System.out.println(event);
+		try
+		{
+			Thread.sleep(10000);
+		}
+		catch(InterruptedException ie)
+		{
+			ie.printStackTrace();
+		}
 	}
 }

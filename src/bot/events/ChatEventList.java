@@ -1,37 +1,39 @@
-package bot;
+package bot.events;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
-import bot.ChatEvent.EventType;
+import bot.events.ChatEvent.EventType;
 
 public class ChatEventList extends LinkedList<ChatEvent>
 {
-	public ChatEventList(List<String> eventlists)
-	{
-		// TODO Auto-generated constructor stub
-	}
-	public ChatEventList(String rawmessages)
+	public ChatEventList(List<String> eventlists, String chatsite)
 	{
 		super();
-		String[] messages = rawmessages.split("\\v+");
+		for(String raweventjsonjson : eventlists)
+			this.addAll(new ChatEventList(raweventjsonjson, chatsite));
+	}
+	public ChatEventList(String raweventjsonjson, String chatsite)
+	{
+		super();
+		//TODO
+		String[] messages = raweventjsonjson.split("\\v+");
 		for(int i=1; i<messages.length-1; ++i){
 			//TODO
-			this.add(parseMessage(messages[i]));
+			this.add(parseMessage(messages[i], chatsite));
 		}
 		String last = messages[messages.length-1];
 		int sloc = last.lastIndexOf("]");
 		String lastmessage = last.substring(0, sloc);
-		this.add(parseMessage(lastmessage));
+		this.add(parseMessage(lastmessage, chatsite));
 	}
 	
-	private static ChatEvent parseMessage(String rawmessages)
+	private static ChatEvent parseMessage(String raweventjson, String chatsite)
 	{
-		//TODO
-		return null;
+		return new ChatEvent(raweventjson, chatsite);
 	}
-	//TODO
+	//TODO add sorting methods
 	
 	public void sortByTimeStamp(){
 		Collections.sort(this, compTimeStamp);
@@ -48,7 +50,7 @@ public class ChatEventList extends LinkedList<ChatEvent>
 	};
 	
 	public ChatEventList getEventsWithTypes(EventType... type){
-		//TODO
+		//TODO copy this list and filter it
 		return null;
 	}
 }

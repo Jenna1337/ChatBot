@@ -1,4 +1,4 @@
-package bot;
+package bot.web;
 
 import java.io.BufferedReader;
 import java.io.IOException;

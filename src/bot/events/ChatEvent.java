@@ -1,10 +1,10 @@
-package bot;
+package bot.events;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import static bot.Utils.getNumValueJSON;
 import static bot.Utils.getStringValueJSON;
-import static bot.WebRequest.GET;
+import static bot.web.WebRequest.GET;
 
 public class ChatEvent
 {
@@ -54,7 +54,7 @@ public class ChatEvent
 	private final long id;
 	
 	private final long message_id;
-	private final String content;
+	private String content;
 	private final long room_id;
 	private final String room_name;
 	private final long user_id;
@@ -63,8 +63,11 @@ public class ChatEvent
 	private final long parent_id;
 	private final long target_user_id;
 	
-	public ChatEvent(String raweventjson)
+	private final String CHATSITE;
+	
+	public ChatEvent(String raweventjson, String chatsite)
 	{
+		CHATSITE = chatsite;
 		event_type = EventType.forEventId(getNumValueJSON("event_type", raweventjson));
 		time_stamp = getNumValueJSON("time_stamp", raweventjson);
 		id = getNumValueJSON("id", raweventjson);
@@ -72,7 +75,7 @@ public class ChatEvent
 		/*
 		 * Note: the value of the JSON "content" may not be the entire message.
 		 */
-		content = getRawMessageContentNoException(message_id);
+		content = null;
 		room_id = getNumValueJSON("room_id", raweventjson);
 		room_name = getStringValueJSON("room_name", raweventjson);
 		user_id = getNumValueJSON("user_id", raweventjson);
@@ -80,9 +83,8 @@ public class ChatEvent
 		parent_id = getNumValueJSON("parent_id", raweventjson);
 		target_user_id = getNumValueJSON("target_user_id", raweventjson);
 	}
-	//TODO
 	
-	private static String getRawMessageContentNoException(long message_id)
+	private String getRawMessageContentNoException(long message_id)
 	{
 		try
 		{
@@ -96,10 +98,10 @@ public class ChatEvent
 			return "";
 		}
 	}
-	private static String getRawMessageContent(long message_id) throws IOException
+	private String getRawMessageContent(long message_id) throws IOException
 	{
 		try{
-			return GET("https://chat.stackoverflow.com/message/"+message_id);
+			return GET("https://"+CHATSITE+"/message/"+message_id);
 		}catch(MalformedURLException murle){
 			throw new IllegalArgumentException("Invalid message id "+message_id);
 		}catch(IOException ioe){
@@ -110,8 +112,7 @@ public class ChatEvent
 	@Override
 	public String toString()
 	{
-		//TODO
-		return "";
+		return varDumpAll();
 	}
 	
 	public EventType getEventType(){
@@ -128,7 +129,9 @@ public class ChatEvent
 		return message_id;
 	}
 	public String getContent(){
-		return content;
+		if(content!=null)
+			return content;
+		return (content=getRawMessageContentNoException(message_id));
 	}
 	public long getRoomId(){
 		return room_id;
@@ -148,5 +151,29 @@ public class ChatEvent
 	}
 	public long getTargetUserId(){
 		return target_user_id;
+	}
+	private String varDumpAll(){
+		String result="ChatEvent[";
+		java.lang.reflect.Field[] fields = this.getClass().getDeclaredFields();
+		for(int i=0;i<fields.length-1;++i)
+			result+=varDump(fields[i].getName())+",";
+		result+=fields[fields.length-1]+"]";
+		return result;
+	}
+	private String varDump(String varname){
+		String result="\""+varname+"\":\"";
+		try
+		{
+			return result+this.getClass().getDeclaredField(varname).get(varname)+"\"";
+		}
+		catch(IllegalArgumentException | IllegalAccessException
+				| NoSuchFieldException | SecurityException e)
+		{
+			// Something horrible happened!
+			System.err.println("Failed to get value of variable "+varname+
+					" of object at "+Integer.toHexString(System.identityHashCode(this)));
+			e.printStackTrace();
+			return result+"null\"";
+		}
 	}
 }
