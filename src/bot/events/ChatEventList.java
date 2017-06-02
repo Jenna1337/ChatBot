@@ -8,32 +8,27 @@ import bot.events.ChatEvent.EventType;
 
 public class ChatEventList extends LinkedList<ChatEvent>
 {
+	public ChatEventList()
+	{
+		super();
+	}
 	public ChatEventList(List<String> eventlists, String chatsite)
 	{
 		super();
-		for(String raweventjsonjson : eventlists)
-			this.addAll(new ChatEventList(raweventjsonjson, chatsite));
+		for(String raweventarrayjson : eventlists)
+		{
+			String[] messages = raweventarrayjson.split("\\},\\{(?=\"event_type\")");
+			for(int i=0; i<messages.length; ++i)
+				this.add(new ChatEvent(messages[i], chatsite));
+		}
 	}
-	public ChatEventList(String raweventjsonjson, String chatsite)
+	public ChatEventList(String raweventarrayjson, String chatsite)
 	{
 		super();
-		//TODO
-		String[] messages = raweventjsonjson.split("\\v+");
-		for(int i=1; i<messages.length-1; ++i){
-			//TODO
-			this.add(parseMessage(messages[i], chatsite));
-		}
-		String last = messages[messages.length-1];
-		int sloc = last.lastIndexOf("]");
-		String lastmessage = last.substring(0, sloc);
-		this.add(parseMessage(lastmessage, chatsite));
+		String[] messages = raweventarrayjson.split("\\},\\{(?=\"event_type\")");
+		for(int i=0; i<messages.length; ++i)
+			this.add(new ChatEvent(messages[i], chatsite));
 	}
-	
-	private static ChatEvent parseMessage(String raweventjson, String chatsite)
-	{
-		return new ChatEvent(raweventjson, chatsite);
-	}
-	//TODO add sorting methods
 	
 	public void sortByTimeStamp(){
 		Collections.sort(this, compTimeStamp);
@@ -50,7 +45,17 @@ public class ChatEventList extends LinkedList<ChatEvent>
 	};
 	
 	public ChatEventList getEventsWithTypes(EventType... type){
-		//TODO copy this list and filter it
+		ChatEventList filteredlist = new ChatEventList();
+		
+		eventloop:
+		for(ChatEvent event : this)
+			if(event.getEventType()!=null)
+				for(EventType evttype : type)
+					if(evttype.equals(event.getEventType()))
+					{
+						filteredlist.add(event);
+						continue eventloop;
+					}
 		return null;
 	}
 }

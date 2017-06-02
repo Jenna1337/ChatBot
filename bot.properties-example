@@ -2,3 +2,6 @@ LOGIN-EMAIL=example@host.com
 PASSWORD=password
 ROOMS=1
 TRIGGER=**
+SITE_DELIMITER=;
+SITES=chat.stackoverflow.com;chat.stackexchange.com
+chat.stackoverflow.com=1,139

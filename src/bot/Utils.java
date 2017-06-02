@@ -29,6 +29,17 @@ public class Utils
 			throw new IllegalArgumentException(e);
 		}
 	}
+	public static String urlencode(String text)
+	{
+		try
+		{
+			return URLEncoder.encode(text, "UTF-8");
+		}
+		catch(UnsupportedEncodingException e)
+		{
+			throw new InternalError(e);
+		}
+	}
 	public static String urlencode(String[][] map)
 	{
 		try
@@ -57,7 +68,8 @@ public class Utils
 			try{
 				return Long.parseLong(search("\'"+parname+"\':(\\d*)", rawjson));
 			}catch(Exception e2){
-				return 0;
+				String s = getStringValueJSON(parname, rawjson);
+				return s.isEmpty() ? 0 : Long.parseLong(s);
 			}
 		}
 	}

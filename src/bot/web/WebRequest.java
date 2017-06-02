@@ -23,21 +23,21 @@ public class WebRequest
 		CookieHandler.setDefault(cook);
 	}
 	private static String[][] headers = new String[0][0];
-	public static String GET(String url) throws MalformedURLException, IOException
+	public static synchronized String GET(String url) throws MalformedURLException, IOException
 	{
 		return GET(new URL(url));
 	}
-	public static String GET(URL url) throws IOException
+	public static synchronized String GET(URL url) throws IOException
 	{
 		HttpURLConnection connection = request(url);
 		connection.setRequestMethod("GET");
 		return read(connection);
 	}
-	public static String POST(String url, String data) throws MalformedURLException, IOException
+	public static synchronized String POST(String url, String data) throws MalformedURLException, IOException
 	{
 		return POST(new URL(url), data);
 	}
-	public static String POST(URL url, String data) throws IOException
+	public static synchronized String POST(URL url, String data) throws IOException
 	{
 		HttpURLConnection connection = request(url);
 		connection.setRequestMethod("POST");
@@ -71,7 +71,7 @@ public class WebRequest
 			throw new InternalError(e);
 		}
 	}
-	private static String read(HttpURLConnection connection) throws IOException
+	private static synchronized String read(HttpURLConnection connection) throws IOException
 	{
 		connection.connect();
 		String encoding = (connection.getContentEncoding()!=null) ? connection.getContentEncoding().toLowerCase() : "";
@@ -93,7 +93,7 @@ public class WebRequest
 		reader.close();
 		return response_text;
 	}
-	private static void send(HttpURLConnection connection, String data) throws IOException
+	private static synchronized void send(HttpURLConnection connection, String data) throws IOException
 	{
 		connection.setRequestProperty("Content-Length", ""+data.length());
 		connection.connect();

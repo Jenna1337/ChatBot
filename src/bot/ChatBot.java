@@ -1,122 +1,92 @@
 package bot;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.HashMap;
 import javax.security.sasl.AuthenticationException;
 import bot.events.ChatEvent;
 import bot.events.ChatEventList;
+import bot.events.EventHandler;
 import bot.web.ChatIO;
 
 public class ChatBot
 {
-	interface Command
+	private static HashMap<String,ChatIO> chatio = new HashMap<>();
+	private final EventHandler eventhandler;
+	private static Thread eventhandlerthread;
+	public ChatBot(final String login, final String password) throws AuthenticationException
 	{
-		public void run(String args);
-	}
-	private static ChatIO chatio;
-	private static final int MAX_COMMAND_TIME = 30000;
-	private final String trigger;
-	private Map<String, Command> commands;
-	public ChatBot(final String login, final String password, final String trigger, Long... rooms) throws AuthenticationException
-	{
-		if(chatio!=null && chatio.isLoggedIn())
-			throw new IllegalStateException("Bot already active.");
+		System.out.println("Logging in...");
 		ChatIO.login(login, password);
-		chatio = new ChatIO("chat.stackoverflow.com");
-		this.trigger = trigger;
-		chatio.addRoom(rooms);
-		//TODO add a Map<String,ChatIO> or something to support multiple sites 
-	}
-	public String getTrigger()
-	{
-		return trigger;
-	}
-	//TODO automatically call this method
-	public void runCommand(ChatEvent message)
-	{
-		if(!message.getContent().startsWith(getTrigger()))
-			return;
-		String[] arr = message.getContent().substring(2).split(" ",2);
-		runCommand(arr[0], arr[1]);
-	}
-	public void runCommand(final String command, final String args)
-	{
-		if(!commands.containsKey(command))
-		{
-			System.out.println("Invalid command: "+command);
-			return;
-		}
-		final Command c = commands.get(command);
-		
-		Timer countdown = new Timer();
-		//Start a new Thread to run the command
-		Thread thread = new Thread(new Runnable()
+		eventhandler = new EventHandler();
+		eventhandlerthread = new Thread(new Runnable()
 		{
 			public void run()
 			{
-				Timer runner = new Timer();
-				TimerTask task = new TimerTask()
-				{
-					public void run()
+				while(true){
+					ChatEventList eventlist = ChatBot.getAllChatEvents();
+					for(ChatEvent event : eventlist)
 					{
-						c.run(args);
-						countdown.cancel();
+						eventhandler.handle(event);
 					}
-				};
-				runner.schedule(task, 1);
-			}
-		});/*{
-		};
-		 */
-		
-		try
-		{
-			java.lang.reflect.Method method_resume = Thread.class.getMethod("resume0");
-			java.lang.reflect.Method method_stop = Thread.class.getMethod("stop0", Object.class);
-			method_resume.setAccessible(true);
-			method_stop.setAccessible(true);
-			countdown.schedule(new TimerTask(){
-				@SuppressWarnings("deprecation")
-				public void run(){
-					//Interrupt the thread
-					System.out.println("Command timed out.");
-					//Kill thread
 					try
 					{
-						thread.stop();
-						if(thread.isAlive()){
-							// A "NEW" status can't change to not-NEW
-							if (thread.getState() != Thread.State.NEW) {
-								method_resume.invoke(thread); // Wake up thread if it was suspended; no-op otherwise
-							}
-							
-							// The VM can handle all thread states
-							method_stop.invoke(thread, new ThreadDeath());
-						}
+						Thread.sleep(10000);
 					}
-					catch(IllegalAccessException | IllegalArgumentException
-							| InvocationTargetException e)
+					catch(InterruptedException ie)
 					{
-						e.printStackTrace();
+						ie.printStackTrace();
 					}
 				}
-			}, MAX_COMMAND_TIME);
-		}
-		catch(SecurityException | NoSuchMethodException e)
-		{
-			System.err.println("Failed to stop thread for command \""+command+
-					"\" with arguments \""+args+"\"");
-			e.printStackTrace();
-		}
+			}
+		});
+		eventhandlerthread.start();
 	}
-	public void putMessage(final long roomid, final String message)
+	public void setTrigger(final String trigger)
 	{
-		chatio.putMessage(roomid, message);
+		eventhandler.setTrigger(trigger);
 	}
-	public ChatEventList getChatEvents()
+	public static void joinRoom(String site, Long... rooms) throws AuthenticationException, IllegalStateException{
+		site=site.toLowerCase();
+		System.out.println("Joining "+site+" rooms "+java.util.Arrays.toString(rooms));
+		if(!chatio.containsKey(site))
+			chatio.put(site, new ChatIO(site));
+		chatio.get(site).addRoom(rooms);
+	}
+	public static void leaveRoom(String site, Long... rooms){
+		site=site.toLowerCase();
+		System.out.println("Leaving "+site+" rooms "+java.util.Arrays.toString(rooms));
+		if(chatio.containsKey(site))
+			chatio.get(site).removeRoom(rooms);
+	}
+	public static void putMessage(String site, final long roomid, final String message)
 	{
-		return chatio.getChatEvents();
+		site=site.toLowerCase();
+		System.out.println("Sending message to "+site+" room "+roomid+
+				" with content \""+message+"\".");
+		if(!chatio.containsKey(site))
+			throw new IllegalStateException("No available IO for site \""+site+"\".");
+		ChatIO io = chatio.get(site);
+		if(!io.isInRoom(roomid))
+			throw new IllegalStateException("Not in room "+roomid+
+					" on site \""+site+"\".");
+		io.putMessage(roomid, message);
+	}
+	public static ChatEventList getChatEvents(String site)
+	{
+		site=site.toLowerCase();
+		System.out.println("Getting chat events from "+site);
+		ChatEventList eventlist = new ChatEventList();
+		for(ChatIO chatiosites : chatio.values())
+			eventlist.addAll(chatiosites.getChatEvents());
+		return eventlist;
+	}
+	public static ChatEventList getAllChatEvents()
+	{
+		System.out.println("Getting chat events from all sites");
+		ChatEventList eventlist = new ChatEventList();
+		for(ChatIO chatiosites : chatio.values())
+			eventlist.addAll(chatiosites.getChatEvents());
+		if(eventlist.isEmpty())
+			System.out.println("No new events.");
+		return eventlist;
 	}
 }
