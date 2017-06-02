@@ -78,13 +78,18 @@ public class EventHandler
 	}
 	public void runCommand(ChatEvent message)
 	{
-		if(!message.getContent().startsWith(trigger))
+		if(message.getContent()==null || !message.getContent().startsWith(trigger))
 			return;
 		String[] arr = message.getContent().substring(2).split(" ",2);
-		runCommand(arr[0], arr[1]);
+		try{
+			runCommand(arr[0], arr[1]);
+		}catch(Exception e){
+			runCommand(arr[0], "");
+		}
 	}
-	public void runCommand(final String command, final String args)
+	public void runCommand(String command, final String args)
 	{
+		command=command.trim();
 		if(!commands.containsKey(command))
 		{
 			System.out.println("Invalid command: "+command);
