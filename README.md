@@ -1,2 +1,2 @@
 # ChatBot
-A collection of chat bots.
+A Stack Exchange chat bot.
