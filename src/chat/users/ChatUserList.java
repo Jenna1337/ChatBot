@@ -1,7 +1,5 @@
 package chat.users;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import chat.ChatSite;
@@ -18,7 +16,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 		for(String rawuserarrayjson : userlists)
 		{
 			String[] userinfos = rawuserarrayjson.substring(1, 
-					rawuserarrayjson.length()-1).split("\\},\\{(?=\"event_type\")");
+					rawuserarrayjson.length()-1).split("\\},\\{(?=\"id\")");
 			for(int i=0; i<userinfos.length; ++i)
 				this.add(new ChatUser(userinfos[i], chatsite));
 		}
@@ -30,20 +28,6 @@ public class ChatUserList extends LinkedList<ChatUser>
 		for(int i=0; i<userinfos.length; ++i)
 			this.add(new ChatUser(userinfos[i], chatsite));
 	}
-	
-	public void sortByTimeStamp(){
-		Collections.sort(this, compTimeStamp);
-	}
-	
-	private static final Comparator<ChatUser> compTimeStamp = new Comparator<ChatUser>()
-	{
-		public int compare(ChatUser o1, ChatUser o2)
-		{
-			long t1=o1.getId();
-			long t2=o2.getId();
-			return t1>t2?1:(t1<t2?-1:0);
-		}
-	};
 	
 	public ChatUserList getModerators(){
 		ChatUserList filteredlist = new ChatUserList();
