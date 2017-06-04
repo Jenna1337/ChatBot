@@ -1,6 +1,7 @@
 import java.io.FileReader;
 import java.util.Properties;
-import bot.ChatBot;
+import chat.bot.ChatBot;
+import chat.events.EventHandlerImpl;
 
 public class Main
 {
@@ -10,12 +11,13 @@ public class Main
 		FileReader reader = new FileReader("bot.properties");
 		props.load(reader);
 		reader.close();
+		String[] sites = props.getProperty("SITES", "chat.stackoverflow.com").split(props.getProperty("SITE_DELIMITER", ";"));
 		ChatBot bot = new ChatBot(props.getProperty("LOGIN-EMAIL"),
-				props.getProperty("PASSWORD")
+				props.getProperty("PASSWORD"),
+				new EventHandlerImpl(),
+				sites
 				);
 		bot.setTrigger(props.getProperty("TRIGGER"));
-		String site_delimiter = props.getProperty("SITE_DELIMITER", ";");
-		String[] sites = props.getProperty("SITES", "chat.stackoverflow.com").split(site_delimiter);
 		for(String site : sites)
 		{
 			String[] siterooms = props.getProperty(site, "1").split(",");

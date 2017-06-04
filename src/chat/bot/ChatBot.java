@@ -1,22 +1,30 @@
-package bot;
+package chat.bot;
 
 import java.util.HashMap;
 import javax.security.sasl.AuthenticationException;
-import bot.events.ChatEvent;
-import bot.events.ChatEventList;
-import bot.events.EventHandler;
-import bot.web.ChatIO;
+import chat.ChatSite;
+import chat.events.ChatEvent;
+import chat.events.ChatEventList;
+import chat.events.EventHandler;
+import chat.io.ChatIO;
 
 public class ChatBot
 {
 	private static HashMap<String,ChatIO> chatio = new HashMap<>();
 	private final EventHandler eventhandler;
 	private static Thread eventhandlerthread;
-	public ChatBot(final String login, final String password) throws AuthenticationException
+	public ChatBot(final String login, final String password, 
+			final EventHandler event_handler, String... sites) throws AuthenticationException
 	{
+		eventhandler = event_handler;
 		System.out.println("Logging in...");
-		ChatIO.login(login, password);
-		eventhandler = new EventHandler();
+		for(String site : sites)
+		{
+			site=site.toUpperCase();
+			ChatSite chatsite = ChatSite.valueOf(site);
+			if(!chatio.containsKey(site))
+				chatio.put(site, new ChatIO(chatsite, login, password));
+		}
 		eventhandlerthread = new Thread(new Runnable()
 		{
 			public void run()
@@ -27,12 +35,10 @@ public class ChatBot
 					{
 						eventhandler.handle(event);
 					}
-					try
-					{
+					System.gc();
+					try{
 						Thread.sleep(10000);
-					}
-					catch(InterruptedException ie)
-					{
+					}catch(InterruptedException ie){
 						ie.printStackTrace();
 					}
 				}
@@ -45,21 +51,19 @@ public class ChatBot
 		eventhandler.setTrigger(trigger);
 	}
 	public static void joinRoom(String site, Long... rooms) throws AuthenticationException, IllegalStateException{
-		site=site.toLowerCase();
+		site=site.toUpperCase();
 		System.out.println("Joining "+site+" rooms "+java.util.Arrays.toString(rooms));
-		if(!chatio.containsKey(site))
-			chatio.put(site, new ChatIO(site));
+		
 		chatio.get(site).addRoom(rooms);
 	}
 	public static void leaveRoom(String site, Long... rooms){
-		site=site.toLowerCase();
+		site=site.toUpperCase();
 		System.out.println("Leaving "+site+" rooms "+java.util.Arrays.toString(rooms));
 		if(chatio.containsKey(site))
 			chatio.get(site).removeRoom(rooms);
 	}
 	public static void putMessage(String site, final long roomid, final String message)
 	{
-		site=site.toLowerCase();
 		System.out.println("Sending message to "+site+" room "+roomid+
 				" with content \""+message+"\".");
 		if(!chatio.containsKey(site))
@@ -70,23 +74,14 @@ public class ChatBot
 					" on site \""+site+"\".");
 		io.putMessage(roomid, message);
 	}
-	public static ChatEventList getChatEvents(String site)
-	{
-		site=site.toLowerCase();
-		System.out.println("Getting chat events from "+site);
-		ChatEventList eventlist = new ChatEventList();
-		for(ChatIO chatiosites : chatio.values())
-			eventlist.addAll(chatiosites.getChatEvents());
-		return eventlist;
-	}
 	public static ChatEventList getAllChatEvents()
 	{
-		System.out.println("Getting chat events from all sites");
+		//System.out.println("Getting chat events from all sites");
 		ChatEventList eventlist = new ChatEventList();
 		for(ChatIO chatiosites : chatio.values())
 			eventlist.addAll(chatiosites.getChatEvents());
-		if(eventlist.isEmpty())
-			System.out.println("No new events.");
+		//if(eventlist.isEmpty())
+		//	System.out.println("No new events.");
 		return eventlist;
 	}
 }

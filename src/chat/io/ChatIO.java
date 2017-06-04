@@ -1,96 +1,154 @@
-package bot.web;
+package chat.io;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.security.sasl.AuthenticationException;
-import bot.events.ChatEventList;
-import static bot.Utils.search;
-import static bot.Utils.urlencode;
-import static bot.web.WebRequest.GET;
-import static bot.web.WebRequest.POST;
+import chat.ChatSite;
+import chat.events.ChatEventList;
+import chat.users.ChatUser;
+import chat.users.ChatUserList;
+import utils.WebRequest;
+import static utils.Utils.search;
+import static utils.Utils.urlencode;
+import static utils.WebRequest.GET;
+import static utils.WebRequest.POST;
 
 public class ChatIO
 {
-	private static final String fkeyHtmlRegex = "name=\"fkey\"\\s+type=\"hidden\"\\s+value=\"([^\"]+)\"";
+	private static final String fkeyHtmlRegex = "name=\"fkey\"\\s+(?>type=\"hidden\"\\s+)?value=\"([^\"]+)\"";
+	private static final String useridHtmlRegex = "id=\"active-user\" class=\"user-container user-(\\d+)\"";
 	private static final String replStr = "\u007F";
 	private static final String replStrUrlEnc = urlencode(replStr);
 	private volatile String fkey;
-	private final String CHATSITE;
-	private final long myUserId;
-	private static boolean logged_in;
+	private final ChatSite CHATSITE;
+	private long myUserId;
+	private boolean logged_in;
 	private SortedSet<Long> rooms = Collections.synchronizedSortedSet(new java.util.TreeSet<Long>());
+	private TreeMap<Integer, ChatUser> usermap = new TreeMap<>();
+	private boolean readyFlag = true;
 	private static Object lock_logged_in = new Object();
-	
-	public ChatIO(final String chatsite) throws AuthenticationException, IllegalStateException
+	static{
+		String[][] headers = {
+				{"Accept", "*/*"},
+				{"Accept-Encoding", "gzip, deflate"},
+				{"Accept-Language", "en-US,en;q=0.5"},
+				{"DNT", "1"},
+				{"Cache-Control", "no-cache"},
+				//{"Connection", "keep-alive"},
+				{"Content-Type", "application/x-www-form-urlencoded"},
+				{"Upgrade-Insecure-Requests", "1"},
+				{"User-Agent", "Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20100101 Firefox/17.0"},
+		};
+		WebRequest.setDefaultHeaders(headers);
+	}
+	public ChatIO(final ChatSite chatsite, final String email, final String password) throws AuthenticationException, IllegalStateException
 	{
+		login(chatsite, email, password);
 		if(!isLoggedIn())
-			throw new IllegalStateException("Not logged in.");
+			throw new IllegalStateException("Not logged in to "+chatsite);
 		CHATSITE = chatsite;
 		long roomid = 1;
+		String url = "http://"+CHATSITE.getUrl()+"/rooms/" + roomid;
 		try
 		{
-			String response_text = GET("http://"+CHATSITE+"/rooms/" + roomid);
+			String response_text = GET(url);
 			fkey = search(fkeyHtmlRegex, response_text);
 			this.fkey = fkey;
 		}
 		catch(Exception e)
 		{
-			throw new AuthenticationException("Failed to get fkey from "+CHATSITE+"/rooms/" + roomid, e);
+			throw new AuthenticationException("Failed to get fkey from "+url, e);
 		}
+		new Thread(new Runnable(){
+			public void run(){
+				try
+				{
+					while(!logged_in)
+						Thread.sleep(100);
+				}
+				catch(InterruptedException e1)
+				{
+				}
+				String response_text;
+				try{
+					response_text = GET(url);
+					myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
+				}catch(Exception e){
+					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
+				}
+			}
+		}).start();
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){
+			public void run()
+			{
+				try
+				{
+					logout();
+				}
+				catch(AuthenticationException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}));
 		//TODO get chat bot's user ID
 		//Note it's different for different sites
-		myUserId=0;
 	}
-	public static synchronized void login(final String email, final String password) throws AuthenticationException
+	private synchronized void login(final ChatSite site, final String email, final String password) throws AuthenticationException
 	{
 		try
 		{
 			synchronized(lock_logged_in){
-				if(!logged_in){
-					String[][] headers = {
-							{"Accept", "*/*"},
-							{"Accept-Encoding", "gzip, deflate"},
-							{"Accept-Language", "en-US,en;q=0.5"},
-							{"DNT", "1"},
-							{"Cache-Control", "no-cache"},
-							//{"Connection", "keep-alive"},
-							{"Content-Type", "application/x-www-form-urlencoded"},
-							{"Upgrade-Insecure-Requests", "1"},
-							{"User-Agent", "Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20100101 Firefox/17.0"},
-					};
-					WebRequest.setDefaultHeaders(headers);
-					String response_text = GET("https://stackoverflow.com/users/login?ssrc=head&returnurl=https%3a%2f%2fstackoverflow.com%2f");
-					
-					String fkey = search("name=\"fkey\"\\s+value=\"([^\"]+)\"", response_text);
-					String post_data = urlencode(new String[][]{
-						{"email", email},
-						{"fkey", fkey},
-						{"oauth_server", ""},
-						{"oauth_version", ""},
-						{"openid_identifier", ""},
-						{"openid_username", ""},
-						{"password", password},
-						{"ssrc", "head"},
-					});
-					response_text = POST("https://stackoverflow.com/users/login?ssrc=head&returnurl=https%3a%2f%2fstackoverflow.com%2f", post_data);
-					System.out.println("Successfully logged in.");// Success
-					logged_in=true;
+				String response_text;
+				String fkey;
+				switch(site){
+					case STACKOVERFLOW:
+						response_text = GET("https://stackoverflow.com/users/login");
+						fkey = search(fkeyHtmlRegex, response_text);
+						String post_data = urlencode(new String[][]{
+							{"email", email},
+							{"fkey", fkey},
+							{"oauth_server", ""},
+							{"oauth_version", ""},
+							{"openid_identifier", ""},
+							{"openid_username", ""},
+							{"password", password},
+							{"ssrc", "head"},
+						});
+						response_text = POST("https://stackoverflow.com/users/login", post_data);
+						System.out.println("Successfully logged in.");// Success
+						break;
+					case STACKEXCHANGE:
+						response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
+							{"from", "https://stackexchange.com/users/login#log-in"}
+						}));
+						response_text = GET(response_text);
+						fkey = search(fkeyHtmlRegex,response_text);
+						response_text = POST("https://openid.stackexchange.com/affiliate/form/login/submit", urlencode(new String[][]{
+							{"email", email},
+							{"password", password},
+							{"affId", "11"},
+							{"fkey", fkey},
+						}));
+						String authurl = search("var target = \'([^\']+)", response_text);
+						GET(authurl);
 				}
-				else
-					System.out.println("Already logged in.");
 			}
 		}
 		catch(Exception e)
 		{
 			throw new AuthenticationException("Failed to login", e);
 		}
+		logged_in=true;
 	}
-	public static synchronized void logout() throws AuthenticationException
+	private synchronized void logout() throws AuthenticationException
 	{
 		try
 		{
@@ -98,7 +156,7 @@ public class ChatIO
 				if(!logged_in)
 					throw new IllegalStateException("Not logged in.");
 				String response_text = GET("https://stackoverflow.com/users/logout");
-				String fkey = search("name=\"fkey\"\\s+value=\"([^\"]+)\"", response_text);
+				String fkey = search(fkeyHtmlRegex, response_text);
 				POST("https://stackoverflow.com/users/logout", urlencode(new String[][]{
 					{"fkey", fkey},
 					{"returnUrl", "https%3A%2F%2Fstackoverflow.com%2F"}
@@ -118,7 +176,7 @@ public class ChatIO
 		String getStr = cacheChatEventGetterString.replace(replStrUrlEnc, t);
 		try
 		{
-			String response = POST("https://"+CHATSITE+"/events", getStr);
+			String response = POST("https://"+CHATSITE.getUrl()+"/events", getStr);
 			try
 			{
 				t = search("\"t\"\\:(\\d+)", response);
@@ -138,6 +196,7 @@ public class ChatIO
 			{
 				//No events
 			}
+			readyFlag =! readyFlag;
 			return new ChatEventList(eventlists, CHATSITE);
 		}
 		catch(Exception ioe)
@@ -151,7 +210,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
+			POST("https://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"text", message}
 			}));
@@ -165,7 +224,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE+"/messages/"+messageid, urlencode(new String[][]{
+			POST("https://"+CHATSITE.getUrl()+"/messages/"+messageid, urlencode(new String[][]{
 				{"fkey", fkey},
 				{"text", message}
 			}));
@@ -179,7 +238,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE+"/users/invite", urlencode(new String[][]{
+			POST("https://"+CHATSITE.getUrl()+"/users/invite", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"UserId", ""+userid},
 				{"RoomId", ""+roomid}
@@ -195,7 +254,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE+"/conversation/new", urlencode(new String[][]{
+			POST("https://"+CHATSITE.getUrl()+"/conversation/new", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"roomId", ""+roomid},
 				{"firstMessageId", ""+firstMessageId},
@@ -211,7 +270,7 @@ public class ChatIO
 					lastMessageId+".", e);
 		}
 	}
-	public static boolean isLoggedIn()
+	public boolean isLoggedIn()
 	{
 		synchronized(lock_logged_in){
 			return logged_in;
@@ -251,6 +310,24 @@ public class ChatIO
 		{
 			throw new IllegalArgumentException("Failed to change bot's about text for site "+
 					CHATSITE, e);
+		}
+	}
+	public ChatUserList getUserInfo(long roomid, Long... userid)
+	{
+		try
+		{
+			String useridstring = ""+userid[0];
+			for(int i=1;i<userid.length;++i)
+				useridstring+=","+userid[i];
+			return new ChatUserList(POST("https://chat.stackexchange.com/user/info", urlencode(new String[][]{
+				{"ids", useridstring},
+				{"roomId", ""+roomid}
+			})), CHATSITE);
+		}
+		catch(Exception e)
+		{
+			throw new IllegalArgumentException("Failed to get user info from site "+
+					CHATSITE+" room "+roomid+" userid "+Arrays.toString(userid), e);
 		}
 	}
 	private static Comparator<String[]> mappedStringArrayComparator = new Comparator<String[]>()

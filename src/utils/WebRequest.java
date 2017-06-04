@@ -1,4 +1,4 @@
-package bot.web;
+package utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,9 +17,9 @@ public class WebRequest
 {
 	private WebRequest(){}
 	
-	private static final CookieManager cook;
 	static{
-		cook = new CookieManager();
+		final CookieManager cook = new CookieManager();
+		cook.setCookiePolicy(java.net.CookiePolicy.ACCEPT_ALL);
 		CookieHandler.setDefault(cook);
 	}
 	private static String[][] headers = new String[0][0];
