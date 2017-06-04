@@ -80,6 +80,7 @@ public class ChatIO
 				try{
 					response_text = GET(url);
 					myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
+					System.out.println(myUserId);
 				}catch(Exception e){
 					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
 				}
@@ -98,8 +99,6 @@ public class ChatIO
 				}
 			}
 		}));
-		//TODO get chat bot's user ID
-		//Note it's different for different sites
 	}
 	private synchronized void login(final ChatSite site, final String email, final String password) throws AuthenticationException
 	{
@@ -329,6 +328,10 @@ public class ChatIO
 			throw new IllegalArgumentException("Failed to get user info from site "+
 					CHATSITE+" room "+roomid+" userid "+Arrays.toString(userid), e);
 		}
+	}
+	public long getMyUserId()
+	{
+		return myUserId;
 	}
 	private static Comparator<String[]> mappedStringArrayComparator = new Comparator<String[]>()
 	{
