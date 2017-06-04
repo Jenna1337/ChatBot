@@ -26,7 +26,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 	public ChatUserList(String rawuserarrayjson, ChatSite chatsite)
 	{
 		super();
-		String[] userinfos = rawuserarrayjson.split("\\},\\{(?=\"event_type\")");
+		String[] userinfos = rawuserarrayjson.split("\\},\\{(?=\"id\")");
 		for(int i=0; i<userinfos.length; ++i)
 			this.add(new ChatUser(userinfos[i], chatsite));
 	}
