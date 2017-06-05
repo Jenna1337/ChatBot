@@ -134,7 +134,8 @@ public enum EventType{
 	/**
 	 * <dt><code>{@link #getEventTypeId()} = 34</code></dt><br/>
 	 * Somebody changed their avatar or name.
-	 * TODO: Verify
+	 * The user that changed their avatar or name is obtainable via the
+	 * {@link ChatEvent#getTargetUserId()} method.
 	 */
 	UserNameOrAvatarChanged(34)
 	;

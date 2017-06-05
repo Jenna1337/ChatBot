@@ -33,7 +33,8 @@ public class ChatBot
 					ChatEventList eventlist = ChatBot.getAllChatEvents();
 					for(ChatEvent event : eventlist)
 					{
-						eventhandler.handle(event);
+						if(event.getUserId()!=ChatBot.chatio.get(event.getChatSite().name()).getMyUserId())
+							eventhandler.handle(event);
 					}
 					System.gc();
 					try{
@@ -73,6 +74,10 @@ public class ChatBot
 			throw new IllegalStateException("Not in room "+roomid+
 					" on site \""+site+"\".");
 		io.putMessage(roomid, message);
+	}
+	public static void putMessage(final ChatEvent event, final String message)
+	{
+		putMessage(event.getChatSite().name(), event.getRoomId(), message);
 	}
 	public static ChatEventList getAllChatEvents()
 	{

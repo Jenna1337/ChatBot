@@ -32,7 +32,7 @@ public class ChatIO
 	private boolean logged_in;
 	private SortedSet<Long> rooms = Collections.synchronizedSortedSet(new java.util.TreeSet<Long>());
 	private TreeMap<Integer, ChatUser> usermap = new TreeMap<>();
-	private boolean readyFlag = true;
+	private boolean firstTime = true;
 	private static Object lock_logged_in = new Object();
 	static{
 		String[][] headers = {
@@ -80,7 +80,7 @@ public class ChatIO
 				try{
 					response_text = GET(url);
 					myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
-					System.out.println(myUserId);
+					System.out.println(CHATSITE.name()+" user id: "+myUserId);
 				}catch(Exception e){
 					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
 				}
@@ -195,7 +195,12 @@ public class ChatIO
 			{
 				//No events
 			}
-			readyFlag =! readyFlag;
+			if(firstTime)
+			{
+				firstTime = false;
+				System.out.println("Joined "+CHATSITE.name());
+				return new ChatEventList();
+			}
 			return new ChatEventList(eventlists, CHATSITE);
 		}
 		catch(Exception ioe)

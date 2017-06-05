@@ -9,8 +9,6 @@ public class EventHandlerImpl extends EventHandler
 		switch(event.getEventType())
 		{
 			case MessagePosted://1
-				runCommand(event);
-				break;
 			case MessageEdited://2
 				runCommand(event);
 				break;
@@ -26,6 +24,13 @@ public class EventHandlerImpl extends EventHandler
 				System.out.println("Handling event "+event.toString());
 				break;
 			case UserMentioned://8
+			case MessageReply://18
+				if(!runCommand(event))
+				{/*
+					String message = "";
+					//TODO
+					ChatBot.putMessage(event.getChatSite().name(), event.getRoomId(), message);
+				*/}
 				break;
 			case MessageFlagged://9
 				break;
@@ -41,17 +46,13 @@ public class EventHandlerImpl extends EventHandler
 				System.out.println("Handling event "+event.toString());
 				break;
 			case GlobalNotification://14
+			case UserNotification://16
 				System.out.println("Handling event "+event.toString());
 				break;
 			case AccessLevelChanged://15
 				break;
-			case UserNotification://16
-				System.out.println("Handling event "+event.toString());
-				break;
 			case Invitation://17
 				System.out.println("Handling event "+event.toString());
-				break;
-			case MessageReply://18
 				break;
 			case MessageMovedOut://19
 				break;
@@ -61,6 +62,7 @@ public class EventHandlerImpl extends EventHandler
 				System.out.println("Handling event "+event.toString());
 				break;
 			case FeedTicker://22
+				String url = utils.Utils.makeMarkdown(event.getContent());
 				break;
 			case UserSuspended://29
 				System.out.println("Handling event "+event.toString());

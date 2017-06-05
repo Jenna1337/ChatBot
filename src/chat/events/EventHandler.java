@@ -1,9 +1,9 @@
 package chat.events;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import chat.ChatSite;
+import java.util.TreeMap;
 import chat.bot.ChatBot;
 
 public abstract class EventHandler
@@ -12,46 +12,77 @@ public abstract class EventHandler
 	{
 		public abstract void run(ChatEvent event, String args);
 	}
-	private static final long MAX_COMMAND_TIME = 30000;
-	private HashMap<String, Command> commands = new HashMap<>();
-	enum BuiltinComands implements Command
+	private static final long MAX_COMMAND_TIME = 300000;
+	private Map<String, Command> commands = new TreeMap<>();
+	private Map<String, Command> builtincommands = new TreeMap<>();
 	{
-		LIST_COMMANDS{
-			public void run(ChatEvent event, String args)
+		builtincommands.put("listcommands", (ChatEvent event, String args)->{
+			String message = "Available commands:\nBuiltin: ";
+			String[] builtin = builtincommands.keySet().toArray(new String[0]);
+			String[] cmds = commands.keySet().toArray(new String[0]);
+			message+=builtin[0];
+			for(int i=1;i<builtin.length;++i)
+				message+=", "+builtin[i];
+			message+="\nLearned: "+args;
+			if(cmds.length>0)
 			{
-				String message = "test";
-				//TODO
-				ChatBot.putMessage(event.getChatSite().name(), event.getRoomId(), message);
+				message+=cmds[0];
+				for(int i=1;i<cmds.length;++i)
+					message+=", "+cmds[i];
 			}
-		},
-		//TODO add more built-in commands
-	}
-	{
-		addCommand("help", BuiltinComands.LIST_COMMANDS);
+			else
+				message+="*none*";//FIXME figure out how to italicize things
+			ChatBot.putMessage(event, message);
+		});
+		builtincommands.put("eval", (ChatEvent event, String args)->{
+			String message = "todo";
+			//TODO
+			ChatBot.putMessage(event, message);
+		});
 	}
 	private String trigger;
-	public abstract void handle(ChatEvent event);
-	public void runCommand(ChatEvent event)
-	{
-		if(event.getContent()==null || !event.getContent().startsWith(trigger))
-			return;
-		String[] arr = event.getContent().substring(2).split(" ",2);
+	private volatile boolean justWaved = false;
+	private Runnable waveTimer = ()->{
 		try{
-			runCommand(event, arr[0], arr[1]);
-		}catch(Exception e){
-			runCommand(event, arr[0], "");
-		}
-	}
-	public void runCommand(ChatEvent event, String command, final String args)
+			Thread.sleep(MAX_COMMAND_TIME);
+		}catch(Exception e){}
+		justWaved=false;
+	};
+	public abstract void handle(ChatEvent event);
+	public boolean runCommand(ChatEvent event)
 	{
-		command=command.trim().toLowerCase();
-		if(!commands.containsKey(command))
-		{
-			System.out.println("Invalid command: "+command);
-			return;
+		if(event.getContent()==null)
+			return false;
+		String content = event.getContent().trim();
+		if(content.equals("o/")&&!justWaved ){
+			ChatBot.putMessage(event, "\\o");
+			justWaved=true;
+			new Thread(waveTimer).start();
+			return true;
 		}
-		final Command c = commands.get(command);
+		if(content.equals("\\o")&&!justWaved){
+			ChatBot.putMessage(event, "o/");
+			justWaved=true;
+			return true;
+		}
+		if(!content.startsWith(trigger))
+			return false;
 		
+		String[] arr = content.substring(2).split(" ",2);
+		
+		final String command=arr[0].trim().toLowerCase();
+		String extra = arr.length>1?arr[1]:"";
+		final Command c;
+		if(builtincommands.containsKey(command))
+			c = builtincommands.get(command);
+		else if(commands.containsKey(command))
+			c = commands.get(command);
+		else{
+			System.out.println("Invalid command: "+command);
+			return false;
+		}
+		
+		final String args = extra;
 		Timer countdown = new Timer();
 		//Start a new Thread to run the command
 		Thread thread = new Thread(new Runnable()
@@ -90,6 +121,7 @@ public abstract class EventHandler
 			}
 		}, MAX_COMMAND_TIME);
 		thread.start();
+		return true;
 	}
 	public void setTrigger(String trigger)
 	{

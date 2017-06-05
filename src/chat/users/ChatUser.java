@@ -4,7 +4,7 @@ import chat.ChatSite;
 import static utils.Utils.getBooleanValueJSON;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
-import static utils.Utils.unescapeHtmlMarkdown;
+import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
 
 public class ChatUser implements Comparable<ChatUser>
@@ -26,8 +26,8 @@ public class ChatUser implements Comparable<ChatUser>
 	public ChatUser(String rawjson, ChatSite chatsite)
 	{
 		id=getNumValueJSON("id", rawjson);
-		name=unescapeHtmlMarkdown(getStringValueJSON("name", rawjson));
-		email_hash=unescapeHtmlMarkdown(getStringValueJSON("email_hash", rawjson).substring(1));
+		name=unescapeHtml(getStringValueJSON("name", rawjson));
+		email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
 		reputation=getNumValueJSON("reputation", rawjson);
 		is_moderator=getBooleanValueJSON("is_moderator", rawjson);
 		is_owner=getBooleanValueJSON("is_owner", rawjson);

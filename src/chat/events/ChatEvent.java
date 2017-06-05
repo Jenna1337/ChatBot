@@ -5,7 +5,8 @@ import java.lang.reflect.Modifier;
 import chat.ChatSite;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
-import static utils.Utils.unescapeHtmlMarkdown;
+import static utils.Utils.unescapeHtml;
+import static utils.Utils.search;
 import static utils.WebRequest.GET;
 
 public class ChatEvent implements Comparable<ChatEvent>
@@ -46,21 +47,20 @@ public class ChatEvent implements Comparable<ChatEvent>
 			case MessageReply:
 				content = getRawMessageContentNoException(message_id);
 				break;
-			case FeedTicker:
-				content = "";
-				break;
 			default:
 				content = getStringValueJSON("content", raweventjson);
 		}
-		content = unescapeHtmlMarkdown(content);
+		content = unescapeHtml(content);
+		if(content.contains("class=\"onebox"))
+			content=chatsite.getUrl()+search("href=\"([^\"]+)", content);
 		
 		room_id = getNumValueJSON("room_id", raweventjson);
-		room_name = unescapeHtmlMarkdown(getStringValueJSON("room_name", raweventjson));
+		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));
 		user_id = getNumValueJSON("user_id", raweventjson);
-		user_name = unescapeHtmlMarkdown(getStringValueJSON("user_name", raweventjson));
+		user_name = unescapeHtml(getStringValueJSON("user_name", raweventjson));
 		parent_id = getNumValueJSON("parent_id", raweventjson);
 		target_user_id = getNumValueJSON("target_user_id", raweventjson);
-		System.out.println("Received event: "+raweventjson);
+		//System.out.println("Received event: "+raweventjson);
 	}
 	
 	@Override

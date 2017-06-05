@@ -17,7 +17,6 @@ public enum ChatSite
 	@Override
 	public String toString()
 	{
-		new UnsupportedOperationException().printStackTrace();
-		return "";
+		return getUrl();
 	}
 }

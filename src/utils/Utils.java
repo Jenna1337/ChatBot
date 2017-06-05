@@ -98,13 +98,33 @@ public class Utils
 			try{
 				return Long.parseLong(searchJSON("\'"+parname+"\':(\\d*)", rawjson));
 			}catch(Exception e2){
-				String s = getStringValueJSON(parname, rawjson);
-				return s.isEmpty() ? 0 : Long.parseLong(s);
+				//String s = getStringValueJSON(parname, rawjson);
+				return 0;
 			}
 		}
 	}
 	public static String getStringValueJSON(String parname, String rawjson)
 	{
+		String match = "";
+		char QUOTE = '\"';
+		int startindex = rawjson.indexOf(QUOTE+parname+QUOTE+':'+QUOTE);
+		if(startindex<0)
+			return "";
+		int index = startindex+parname.length()+3;
+		boolean escapenext = false;
+		char nextchar;
+		try{
+			while((nextchar=rawjson.charAt(++index))!=QUOTE || escapenext){
+				escapenext=false;
+				match+=nextchar;
+				if(nextchar=='\\')
+					escapenext=true;
+			}
+		}catch(Exception e){
+			System.out.println(match);
+		}
+		return match;
+		/*
 		try{
 			return searchJSON("\""+parname+"\":\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
 		}catch(Exception e){
@@ -121,50 +141,73 @@ public class Utils
 					}
 				}
 			}
-		}
+		}*/
 	}
-	private static Matcher unicodematcher = Pattern.compile("\\\\u([[:xdigit:]]{4})").matcher("");
-	public static String replaceUnicodeEscapes(String text)
+	private static Matcher unicodematcher = Pattern.compile("\\\\u(....)").matcher("");
+	private static String replaceUnicodeEscapes(String text)
 	{
 		unicodematcher.reset(text);
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		while(unicodematcher.find())
 		{
 			String match = unicodematcher.group(1);
 			text=text.replaceAll("\\\\u"+match, ""+((char)Integer.parseUnsignedInt(match, 16)));
+			unicodematcher.reset(text);
 		}
+		Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 		return text;
 	}
-	private static Matcher htmlescapematcher = Pattern.compile("&#(..);").matcher("");
-	public static String replaceHtmlEscapes(String text)
+	private static Matcher htmlescapematcher = Pattern.compile("\\&\\#(..);").matcher("");
+	private static String replaceHtmlEscapes(String text)
 	{
 		htmlescapematcher.reset(text);
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		while(htmlescapematcher.find())
 		{
 			String match = htmlescapematcher.group(1);
-			text=text.replaceAll("&#u"+match, ""+((char)Integer.parseUnsignedInt(match, 16)));
+			text=text.replaceAll("&#"+match+";", ""+((char)Integer.parseUnsignedInt(match, 16)));
 		}
+		Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 		return text;
 	}
-	public static String replaceAllAll(String target, String[][] rr)
+	private static String replaceAllAll(String target, String[][] rr)
 	{
 		for(String[] r : rr)
 			target=target.replaceAll(r[0], r[1]);
 		return target;
 	}
 	private static final String[][] replacementRegexes = {
-			{"\\\\u003c/?b\\\\u003e","**"},
-			{"\\\\u003c/?i\\\\u003e","*"},
+			{"</?b>","**"},
+			{"</?i>","*"},
 			{"&quot;","\""},
 			{"&lt;","<"},
 			{"&gt;",">"},
 			//{"&$39;","\'"},
 			{"&amp;","&"},
-			{"\\u003c/?code\\u003e","\u0096"}
+			{"\\\\\"","\""},
+			{"\\\\\'","\'"},
+			{"<\\/?code>","\u0096"}
 	};
-	public static String unescapeHtmlMarkdown(String text)
+	private static final Matcher htmllinkmatcher = Pattern.compile("<a\\s+.*href=\"([^\"]+)\"(?>\\s+title=\"([^\"]+)\")?[^>]*>(.*)<\\/a>").matcher("");
+	public static String unescapeHtml(String text)
 	{
 		if(text==null)
 			return "";
-		return replaceAllAll(replaceHtmlEscapes(replaceUnicodeEscapes(text)), replacementRegexes);
+		text =replaceAllAll(replaceHtmlEscapes(replaceUnicodeEscapes(text)), replacementRegexes);
+		return text;
+	}
+	public static String makeMarkdown(String text)
+	{
+		if(text==null)
+			return "";
+		text =unescapeHtml(text);
+		htmllinkmatcher.reset(text);
+		while(htmllinkmatcher.find()){
+			String optional = htmllinkmatcher.group(2);
+			String replacement = "["+htmllinkmatcher.group(3)+"]("+
+					htmllinkmatcher.group(1)+(optional!=null?(" \""+optional+"\""):"")+")";
+			text=text.replace(htmllinkmatcher.group(), replacement);
+		}
+		return text;
 	}
 }
