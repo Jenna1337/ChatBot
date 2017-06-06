@@ -1,5 +1,6 @@
 package chat.io;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -284,16 +285,32 @@ public class ChatIO
 			return logged_in;
 		}
 	}
-	public void addRoom(final Long... room)
+	public void joinRoom(final Long... room)
 	{
 		for(Long r : room)
 			rooms.add(r);
 		updateChatEventGetterStringCache();
 	}
-	public void removeRoom(final Long... room)
+	public void leaveRoom(final Long... room)
 	{
-		for(Long r : room)
-			rooms.remove(r);
+		for(Long r : room){
+			if(rooms.remove(r))
+			{
+				try
+				{
+					POST("http://"+CHATSITE.getUrl()+"/chats/leave/"+r, urlencode(new String[][]{
+						{"fkey",fkey},
+						{"quiet", "true"}
+					}));
+				}
+				catch(IOException e)
+				{
+					System.out.println("Failed to leave "+CHATSITE+" room "+r);
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		updateChatEventGetterStringCache();
 	}
 	public SortedSet<Long> getRoomSet()

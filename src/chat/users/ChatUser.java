@@ -1,7 +1,7 @@
 package chat.users;
 
 import chat.ChatSite;
-import chat.JsonObject;
+import utils.json.JsonObject;
 import static utils.Utils.getBooleanValueJSON;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;

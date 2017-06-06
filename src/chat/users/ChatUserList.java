@@ -1,10 +1,10 @@
 package chat.users;
 
-import java.util.LinkedList;
 import java.util.List;
 import chat.ChatSite;
+import utils.json.JsonList;
 
-public class ChatUserList extends LinkedList<ChatUser>
+public class ChatUserList extends JsonList<ChatUser>
 {
 	public ChatUserList()
 	{
@@ -20,6 +20,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 			for(int i=0; i<userinfos.length; ++i)
 				this.add(new ChatUser(userinfos[i], chatsite));
 		}
+		this.sort(null);
 	}
 	public ChatUserList(String rawuserarrayjson, ChatSite chatsite)
 	{
@@ -27,6 +28,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 		String[] userinfos = rawuserarrayjson.split("\\},\\{(?=\"id\")");
 		for(int i=0; i<userinfos.length; ++i)
 			this.add(new ChatUser(userinfos[i], chatsite));
+		this.sort(null);
 	}
 	
 	public ChatUserList getModerators(){
@@ -34,6 +36,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 		for(ChatUser user : this)
 			if(user.isModerator())
 				filteredlist.add(user);
+		filteredlist.sort(null);
 		return filteredlist;
 	}
 	public ChatUserList getOwners(){
@@ -41,6 +44,7 @@ public class ChatUserList extends LinkedList<ChatUser>
 		for(ChatUser user : this)
 			if(user.isOwner())
 				filteredlist.add(user);
+		filteredlist.sort(null);
 		return filteredlist;
 	}
 }

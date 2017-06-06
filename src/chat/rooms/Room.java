@@ -1,7 +1,7 @@
 package chat.rooms;
 
 import chat.ChatSite;
-import chat.JsonObject;
+import utils.json.JsonObject;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.getBooleanValueJSON;
 import static utils.WebRequest.POST;
@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class Room extends JsonObject<Room>
 {
 	/**The room's id.*/
-	private long id;
+	private final long id;
 	/**The room's name.*/
 	private String name;
 	/**The room's description.*/

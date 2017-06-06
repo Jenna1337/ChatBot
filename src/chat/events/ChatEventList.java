@@ -1,10 +1,10 @@
 package chat.events;
 
-import java.util.LinkedList;
 import java.util.List;
 import chat.ChatSite;
+import utils.json.JsonList;
 
-public class ChatEventList extends LinkedList<ChatEvent>
+public class ChatEventList extends JsonList<ChatEvent>
 {
 	public ChatEventList()
 	{
@@ -20,6 +20,7 @@ public class ChatEventList extends LinkedList<ChatEvent>
 			for(int i=0; i<messages.length; ++i)
 				this.add(new ChatEvent(messages[i], chatsite));
 		}
+		this.sort(null);
 	}
 	public ChatEventList(String raweventarrayjson, ChatSite chatsite)
 	{
@@ -27,6 +28,7 @@ public class ChatEventList extends LinkedList<ChatEvent>
 		String[] messages = raweventarrayjson.split("\\},\\{(?=\"event_type\")");
 		for(int i=0; i<messages.length; ++i)
 			this.add(new ChatEvent(messages[i], chatsite));
+		this.sort(null);
 	}
 	
 	public ChatEventList getEventsWithTypes(EventType... type){
@@ -41,6 +43,7 @@ public class ChatEventList extends LinkedList<ChatEvent>
 						filteredlist.add(event);
 						continue eventloop;
 					}
+		filteredlist.sort(null);
 		return filteredlist;
 	}
 }

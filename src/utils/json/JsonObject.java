@@ -1,4 +1,4 @@
-package chat;
+package utils.json;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

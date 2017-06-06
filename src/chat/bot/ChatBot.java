@@ -55,13 +55,13 @@ public class ChatBot
 		site=site.toUpperCase();
 		System.out.println("Joining "+site+" rooms "+java.util.Arrays.toString(rooms));
 		
-		chatio.get(site).addRoom(rooms);
+		chatio.get(site).joinRoom(rooms);
 	}
 	public static void leaveRoom(String site, Long... rooms){
 		site=site.toUpperCase();
 		System.out.println("Leaving "+site+" rooms "+java.util.Arrays.toString(rooms));
 		if(chatio.containsKey(site))
-			chatio.get(site).removeRoom(rooms);
+			chatio.get(site).leaveRoom(rooms);
 	}
 	public static void putMessage(String site, final long roomid, final String message)
 	{
