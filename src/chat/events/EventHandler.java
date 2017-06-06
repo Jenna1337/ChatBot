@@ -14,7 +14,7 @@ public abstract class EventHandler
 		public abstract void run(ChatEvent event, String args);
 	}
 	private static final long MAX_COMMAND_TIME = 30000;// 30 seconds
-	private static final long WAVE_TIMER_SLEEP = 60000;// 60 seconds
+	private static final long WAVE_TIMER_SLEEP = 60000*5;// 60 seconds *5
 	private static final String waveRight = "o/", waveLeft = "\\o";
 	private Map<String, Command> commands = new TreeMap<>();
 	private Map<String, Command> builtincommands = new TreeMap<>();
