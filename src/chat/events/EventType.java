@@ -92,8 +92,7 @@ public enum EventType{
 	UserNotification(16),
 	/**
 	 * <dt><code>{@link #getEventTypeId()} = 17</code></dt><br/>
-	 * Somebody was invited to another room.
-	 * TODO: Verify
+	 * Current user was invited to another room.
 	 */
 	Invitation(17),
 	/**

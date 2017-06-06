@@ -67,7 +67,7 @@ public abstract class EventHandler
 			else{
 			}
 		};
-		Command forget = (ChatEvent event, String args)->{
+		Command unlearn = (ChatEvent event, String args)->{
 			if(commands.containsKey(args))
 			{
 				commands.remove(args);
@@ -76,14 +76,12 @@ public abstract class EventHandler
 			else
 				ChatBot.replyToMessage(event, "Command does not exists.");
 		};
+		builtincommands.put("help", listcommands);
+		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
 		builtincommands.put("asm", assembly);
 		builtincommands.put("learn", learn);
-		builtincommands.put("teach", learn);
-		builtincommands.put("putcommand", learn);
-		builtincommands.put("unlearn", forget);
-		builtincommands.put("unteach", forget);
-		builtincommands.put("removecommand", learn);
+		builtincommands.put("unlearn", unlearn);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
