@@ -34,6 +34,7 @@ public class ChatIO
 	private TreeMap<Integer, ChatUser> usermap = new TreeMap<>();
 	private boolean firstTime = true;
 	private static Object lock_logged_in = new Object();
+	private static Object lock_roomcacheupdate = new Object();
 	static{
 		String[][] headers = {
 				{"Accept", "*/*"},
@@ -172,43 +173,46 @@ public class ChatIO
 	private String t="0";
 	public ChatEventList getChatEvents()
 	{
-		String getStr = cacheChatEventGetterString.replace(replStrUrlEnc, t);
-		try
+		synchronized(lock_roomcacheupdate)
 		{
-			String response = POST("https://"+CHATSITE.getUrl()+"/events", getStr);
+			String getStr = cacheChatEventGetterString.replace(replStrUrlEnc, t);
 			try
 			{
-				t = search("\"t\"\\:(\\d+)", response);
-			}
-			catch(IllegalArgumentException iae)
-			{
-			}
-			LinkedList<String> eventlists = new LinkedList<String>();
-			try
-			{
-				Pattern p = Pattern.compile("\"e\"\\:\\[([^\\]]+)");
-				Matcher m = p.matcher(response);
-				while(m.find())
-					eventlists.add(m.group(1));
+				String response = POST("https://"+CHATSITE.getUrl()+"/events", getStr);
+				try
+				{
+					t = search("\"t\"\\:(\\d+)", response);
+				}
+				catch(IllegalArgumentException iae)
+				{
+				}
+				LinkedList<String> eventlists = new LinkedList<String>();
+				try
+				{
+					Pattern p = Pattern.compile("\"e\"\\:\\[([^\\]]+)");
+					Matcher m = p.matcher(response);
+					while(m.find())
+						eventlists.add(m.group(1));
+				}
+				catch(Exception e)
+				{
+					//No events
+				}
+				if(firstTime)
+				{
+					firstTime = false;
+					System.out.println("Joined "+CHATSITE.name());
+					return new ChatEventList();
+				}
+				return new ChatEventList(eventlists, CHATSITE);
 			}
 			catch(Exception e)
 			{
-				//No events
+				System.err.println("Failed to get messages for "+CHATSITE);
+				e.printStackTrace();
+				return null;
 			}
-			if(firstTime)
-			{
-				firstTime = false;
-				System.out.println("Joined "+CHATSITE.name());
-				return new ChatEventList();
-			}
-			return new ChatEventList(eventlists, CHATSITE);
 		}
-		catch(Exception ioe)
-		{
-			System.err.println("Failed to get messages for "+CHATSITE);
-			ioe.printStackTrace();
-		}
-		return null;
 	}
 	public void putMessage(final long roomid, final String message)
 	{
@@ -254,7 +258,7 @@ public class ChatIO
 					userid+" to room id "+roomid+".", e);
 		}
 	}
-	public void bookmarkConversation(final long roomid, final String title, long firstMessageId, long lastMessageId)
+	public void bookmarkConversation(final long roomid, final String title, final long firstMessageId, final long lastMessageId)
 	{
 		try
 		{
@@ -280,13 +284,13 @@ public class ChatIO
 			return logged_in;
 		}
 	}
-	public void addRoom(Long... room)
+	public void addRoom(final Long... room)
 	{
 		for(Long r : room)
 			rooms.add(r);
 		updateChatEventGetterStringCache();
 	}
-	public void removeRoom(Long... room)
+	public void removeRoom(final Long... room)
 	{
 		for(Long r : room)
 			rooms.remove(r);
@@ -296,11 +300,11 @@ public class ChatIO
 	{
 		return rooms;
 	}
-	public boolean isInRoom(Long roomid)
+	public boolean isInRoom(final Long roomid)
 	{
 		return rooms.contains(roomid);
 	}
-	public void changeBotAboutText(String newtext)
+	public void changeBotAboutText(final String newtext)
 	{
 		try
 		{
@@ -316,7 +320,7 @@ public class ChatIO
 					CHATSITE, e);
 		}
 	}
-	public ChatUserList getUserInfo(long roomid, Long... userid)
+	public ChatUserList getUserInfo(final long roomid, final Long... userid)
 	{
 		try
 		{
@@ -340,17 +344,19 @@ public class ChatIO
 	}
 	private static Comparator<String[]> mappedStringArrayComparator = new Comparator<String[]>()
 	{
-		public int compare(String[] o1, String[] o2)
+		public int compare(final String[] o1, final String[] o2)
 		{
 			return o1[0].compareTo(o2[0]);
 		}
 	};
 	private void updateChatEventGetterStringCache(){
-		ArrayList<String[]> listtopost = new ArrayList<>();
-		listtopost.add(new String[]{"fkey", fkey});
-		for(long roomid : rooms)
-			listtopost.add(new String[]{"r"+roomid, replStr});
-		Collections.sort(listtopost, mappedStringArrayComparator);
-		cacheChatEventGetterString = urlencode(listtopost.toArray(new String[][]{}));
+		synchronized(lock_roomcacheupdate){
+			ArrayList<String[]> listtopost = new ArrayList<>();
+			listtopost.add(new String[]{"fkey", fkey});
+			for(long roomid : rooms)
+				listtopost.add(new String[]{"r"+roomid, replStr});
+			Collections.sort(listtopost, mappedStringArrayComparator);
+			cacheChatEventGetterString = urlencode(listtopost.toArray(new String[][]{}));
+		}
 	}
 }

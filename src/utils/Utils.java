@@ -80,10 +80,10 @@ public class Utils
 	public static boolean getBooleanValueJSON(String parname, String rawjson)
 	{
 		try{
-			return Boolean.parseBoolean(searchJSON("\""+parname+"\":(\\d*)", rawjson));
+			return Boolean.parseBoolean(searchJSON("\""+parname+"\":(?i)(true|false|null)", rawjson));
 		}catch(Exception e){
 			try{
-				return Boolean.parseBoolean(searchJSON("\'"+parname+"\':(\\d*)", rawjson));
+				return Boolean.parseBoolean(searchJSON("\'"+parname+"\':(?i)(true|false|null)", rawjson));
 			}catch(Exception e2){
 				String s = getStringValueJSON(parname, rawjson);
 				return s.isEmpty() ? false : Boolean.parseBoolean(s);

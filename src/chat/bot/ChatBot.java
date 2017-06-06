@@ -75,9 +75,11 @@ public class ChatBot
 					" on site \""+site+"\".");
 		io.putMessage(roomid, message);
 	}
-	public static void putMessage(final ChatEvent event, final String message)
-	{
+	public static void putMessage(final ChatEvent event, final String message){
 		putMessage(event.getChatSite().name(), event.getRoomId(), message);
+	}
+	public static void replyToMessage(ChatEvent event, String message){
+		putMessage(event, ":"+event.getMessageId()+" "+message);
 	}
 	public static ChatEventList getAllChatEvents()
 	{

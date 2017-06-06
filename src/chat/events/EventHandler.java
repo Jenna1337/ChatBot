@@ -5,6 +5,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import chat.bot.ChatBot;
+import chat.bot.tools.MicroAssembler;
 
 public abstract class EventHandler
 {
@@ -12,11 +13,13 @@ public abstract class EventHandler
 	{
 		public abstract void run(ChatEvent event, String args);
 	}
-	private static final long MAX_COMMAND_TIME = 300000;
+	private static final long MAX_COMMAND_TIME = 30000;// 30 seconds
+	private static final long WAVE_TIMER_SLEEP = 60000;// 60 seconds
+	private static final String waveRight = "o/", waveLeft = "\\o";
 	private Map<String, Command> commands = new TreeMap<>();
 	private Map<String, Command> builtincommands = new TreeMap<>();
 	{
-		builtincommands.put("listcommands", (ChatEvent event, String args)->{
+		Command listcommands = (ChatEvent event, String args)->{
 			String message = "Available commands:\nBuiltin: ";
 			String[] builtin = builtincommands.keySet().toArray(new String[0]);
 			String[] cmds = commands.keySet().toArray(new String[0]);
@@ -31,40 +34,90 @@ public abstract class EventHandler
 					message+=", "+cmds[i];
 			}
 			else
-				message+="*none*";//FIXME figure out how to italicize things
+				message+="none";
 			ChatBot.putMessage(event, message);
-		});
-		builtincommands.put("eval", (ChatEvent event, String args)->{
-			String message = "todo";
-			//TODO
-			ChatBot.putMessage(event, message);
-		});
+		};
+		Command assembly = (ChatEvent event, String args)->{
+			/*
+			 * Examples:
+			 *     Fibonacci sequence:
+			 *         =a1;=b1;=c0;l1?b0;#1end;"$a, ;=cb;+ba;=ac;#7l1;end"...;
+			 *     
+			 */
+			String message = MicroAssembler.assemble(args);
+			if(message.isEmpty())
+				message = "Invalid input.";
+			ChatBot.replyToMessage(event, message);
+		};
+		Command learn = (ChatEvent event, String args)->{
+			if(!args.isEmpty() && args.contains(" ")){
+				String[] args2 = args.split(" ", 2);
+				final String name = args2[0];
+				final String text = args2[1];
+				if(!commands.containsKey(name))
+				{
+					commands.put(name, (ChatEvent _event, String _args)->{
+						ChatBot.putMessage(_event, MicroAssembler.assemble('\"'+text));
+					});
+					ChatBot.replyToMessage(event, "Learned command: "+name);
+				}
+				else
+					ChatBot.replyToMessage(event, "Command already exists.");
+			}
+			else{
+			}
+		};
+		Command forget = (ChatEvent event, String args)->{
+			if(commands.containsKey(args))
+			{
+				commands.remove(args);
+				ChatBot.replyToMessage(event, "Forgot command: "+args);
+			}
+			else
+				ChatBot.replyToMessage(event, "Command does not exists.");
+		};
+		builtincommands.put("listcommands", listcommands);
+		builtincommands.put("asm", assembly);
+		builtincommands.put("learn", learn);
+		builtincommands.put("teach", learn);
+		builtincommands.put("putcommand", learn);
+		builtincommands.put("unlearn", forget);
+		builtincommands.put("unteach", forget);
+		builtincommands.put("removecommand", learn);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
 	private Runnable waveTimer = ()->{
 		try{
-			Thread.sleep(MAX_COMMAND_TIME);
-		}catch(Exception e){}
-		justWaved=false;
+			Thread.sleep(WAVE_TIMER_SLEEP);
+		}catch(Exception e){e.printStackTrace();}
+		finally{
+			justWaved=false;
+		}
 	};
-	public abstract void handle(ChatEvent event);
-	public boolean runCommand(ChatEvent event)
+	private boolean wave(final ChatEvent event, final String content){
+		switch(content){
+			case waveRight:
+				ChatBot.putMessage(event, waveLeft);
+				break;
+			case waveLeft:
+				ChatBot.putMessage(event, waveRight);
+				break;
+			default:
+				return false;
+		}
+		justWaved=true;
+		new Thread(waveTimer, "WaveTimer").start();
+		return true;
+	}
+	public abstract void handle(final ChatEvent event);
+	public boolean runCommand(final ChatEvent event)
 	{
 		if(event.getContent()==null)
 			return false;
 		String content = event.getContent().trim();
-		if(content.equals("o/")&&!justWaved ){
-			ChatBot.putMessage(event, "\\o");
-			justWaved=true;
-			new Thread(waveTimer).start();
+		if(!justWaved && wave(event, content))
 			return true;
-		}
-		if(content.equals("\\o")&&!justWaved){
-			ChatBot.putMessage(event, "o/");
-			justWaved=true;
-			return true;
-		}
 		if(!content.startsWith(trigger))
 			return false;
 		
@@ -92,9 +145,8 @@ public abstract class EventHandler
 				c.run(event, args);
 				countdown.cancel();
 			}
-		});/*{
-		};
-		 */
+		}, "Command-"+command);
+		
 		final String cmd = command;
 		countdown.schedule(new TimerTask(){
 			@SuppressWarnings("deprecation")

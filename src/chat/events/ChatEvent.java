@@ -1,32 +1,40 @@
 package chat.events;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import chat.ChatSite;
+import chat.JsonObject;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.unescapeHtml;
 import static utils.Utils.search;
 import static utils.WebRequest.GET;
 
-public class ChatEvent implements Comparable<ChatEvent>
+public class ChatEvent extends JsonObject<ChatEvent>
 {
+	/**The type of event.*/
 	private final EventType event_type;
+	/**The event's timestamp.*/
 	private final long time_stamp;
+	/**The event's id.*/
 	private final long id;
-	
+	/**The id of the message affected.*/
 	private final long message_id;
+	/**The content of the event.*/
 	private String content;
+	/**The room id in which this event took place.*/
 	private final long room_id;
+	/**The room name in which this event took place.*/
 	private final String room_name;
+	/**The id of the user that initiated this event.*/
 	private final long user_id;
+	/**The username of the user that initiated this event.*/
 	private final String user_name;
-	
+	/**The id of the event that is referred to by this event.*/
 	private final long parent_id;
+	/**The id of the user that is targeted by this event.*/
 	private final long target_user_id;
-	
+	/**The number of stars this message has.*/
 	private final long message_stars;
-	
+	/**The corresponding chat site.*/
 	private final ChatSite CHATSITE;
 	
 	public ChatEvent(final String raweventjson, final ChatSite chatsite)
@@ -111,6 +119,12 @@ public class ChatEvent implements Comparable<ChatEvent>
 	public ChatSite getChatSite(){
 		return CHATSITE;
 	}
+	public int compareTo(ChatEvent o)
+	{
+		long t1=this.getTimeStamp();
+		long t2=o.getTimeStamp();
+		return t1>t2?1:(t1<t2?-1:0);
+	}
 
 	private String getRawMessageContentNoException(final long message_id)
 	{
@@ -125,47 +139,5 @@ public class ChatEvent implements Comparable<ChatEvent>
 			System.err.println("Failed to read message id "+message_id);
 			return null;
 		}
-	}
-	/**
-	 * Debugging method.
-	 * @return A string containing all the instance variable names and their corresponding values.
-	 */
-	private String varDumpAll(){
-		String result="ChatEvent[";
-		java.lang.reflect.Field[] fields = this.getClass().getDeclaredFields();
-		for(int i=0;i<fields.length-1;++i)
-			if(!Modifier.isStatic(fields[i].getModifiers()))
-				result+=varDump(fields[i])+",";
-		result+=varDump(fields[fields.length-1])+"]";
-		return result;
-	}
-	/**
-	 * Debugging method.
-	 * @return A string containing the variable's name and its corresponding values.
-	 */
-	private String varDump(Field f){
-		String result="\""+f.getName()+"\":\"";
-		try
-		{
-			f.setAccessible(true);
-			Object o = f.get(this);
-			return result+o+"\"";
-		}
-		catch(IllegalArgumentException | IllegalAccessException
-				| SecurityException e)
-		{
-			// Something horrible happened!
-			System.err.println("Failed to get value of variable "+f.getName()+
-					" of object at "+Integer.toHexString(System.identityHashCode(this)));
-			e.printStackTrace();
-			return result+"null\"";
-		}
-	}
-
-	public int compareTo(ChatEvent o)
-	{
-		long t1=this.getTimeStamp();
-		long t2=o.getTimeStamp();
-		return t1>t2?1:(t1<t2?-1:0);
 	}
 }

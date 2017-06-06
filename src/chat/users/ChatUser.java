@@ -1,30 +1,49 @@
 package chat.users;
 
 import chat.ChatSite;
+import chat.JsonObject;
 import static utils.Utils.getBooleanValueJSON;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
 
-public class ChatUser implements Comparable<ChatUser>
+public class ChatUser extends JsonObject<ChatUser>
 {
+	/**The user's id.*/
 	private final long id;
+	/**The user's username.*/
 	private String name;
 	/**
-	 * may contain a link to the profile image with a "!" before the "http" 
+	 * Corresponds to the user's profile picture.<br/>
+	 * Either contains a link to the profile image with a "!" before the "http", or
+	 * <pre>"//www.gravatar.com/avatar/" + email_hash + "?s=32&d=identicon&r=PG"</pre>
 	 */
 	private String email_hash;
+	/**The user's "about" text.*/
 	private String user_message;
+	/**The URL of the user's profile page.*/
 	private String profileUrl;
+	/**The website where the user signed up*/
 	private String host;
+	/**The user's reputation.*/
 	private long reputation;
+	/**Indicates whether the user is a moderator or not.*/
 	private boolean is_moderator;
+	/**Indicates whether the user is an owner or not.*/
 	private boolean is_owner;
+	/**The timestamp the user last posted a message.*/
 	private long last_post;
+	/**The timestamp the user last was seen.*/
 	private long last_seen;
+	/**The HTML for the user's activity column spark line chart.*/
+	private String usage;
+	/**The corresponding chat site.*/
+	private final ChatSite CHATSITE;
+	
 	public ChatUser(String rawjson, ChatSite chatsite)
 	{
+		CHATSITE=chatsite;
 		id=getNumValueJSON("id", rawjson);
 		name=unescapeHtml(getStringValueJSON("name", rawjson));
 		email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
@@ -40,7 +59,7 @@ public class ChatUser implements Comparable<ChatUser>
 			host = getStringValueJSON("host", response);
 			//TODO are these required?
 			//"rooms":[{"id":1,"name":"Sandbox","last_post":null,"activity":0}]
-			//"usage":null
+			usage = getStringValueJSON("usage", response);
 			//"invite_targets":null
 			//"issues":null
 			//boolean is_registered = getBooleanValueJSON("is_registered", response);
@@ -49,49 +68,44 @@ public class ChatUser implements Comparable<ChatUser>
 			
 		}
 	}
-	public long getId()
-	{
+	public long getId(){
 		return id;
 	}
-	public String getName()
-	{
+	public String getName(){
 		return name;
 	}
-	public String getEmailhash()
-	{
+	public String getEmailhash(){
 		return email_hash;
 	}
-	public String getUserMessage()
-	{
+	public String getUserMessage(){
 		return user_message;
 	}
-	public String getProfileUrl()
-	{
+	public String getProfileUrl(){
 		return profileUrl;
 	}
-	public String getHost()
-	{
+	public String getHost(){
 		return host;
 	}
-	public long getReputation()
-	{
+	public long getReputation(){
 		return reputation;
 	}
-	public boolean isModerator()
-	{
+	public boolean isModerator(){
 		return is_moderator;
 	}
-	public boolean isOwner()
-	{
+	public boolean isOwner(){
 		return is_owner;
 	}
-	public long getLastPost()
-	{
+	public long getLastPost(){
 		return last_post;
 	}
-	public long getLastSeen()
-	{
+	public long getLastSeen(){
 		return last_seen;
+	}
+	public String getUsage(){
+		return usage;
+	}
+	public ChatSite getChatSite(){
+		return CHATSITE;
 	}
 	public int compareTo(ChatUser o)
 	{

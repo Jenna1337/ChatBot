@@ -1,8 +1,11 @@
 package chat.events;
 
+import static utils.WebRequest.POST;
+import static utils.Utils.urlencode;
+
 public class EventHandlerImpl extends EventHandler
 {
-	public void handle(ChatEvent event)
+	public void handle(final ChatEvent event)
 	{
 		//System.out.println("Handling event "+event.toString());
 		//TODO Finish the switch cases
@@ -48,6 +51,13 @@ public class EventHandlerImpl extends EventHandler
 			case GlobalNotification://14
 			case UserNotification://16
 				System.out.println("Handling event "+event.toString());
+				try{
+					POST("https://chat.stackoverflow.com/messages/ack", urlencode(new String[][]{
+						{"id", ""+event.getMessageId()}
+					}));
+				}catch(Exception e){
+					e.printStackTrace();
+				}
 				break;
 			case AccessLevelChanged://15
 				break;
