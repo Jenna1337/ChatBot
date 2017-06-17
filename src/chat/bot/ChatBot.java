@@ -7,9 +7,11 @@ import chat.events.ChatEvent;
 import chat.events.ChatEventList;
 import chat.events.EventHandler;
 import chat.io.ChatIO;
+import static utils.Utils.getDateTime;
 
 public class ChatBot
 {
+	private static final long chatRefreshDelay = 5000;
 	private static HashMap<String,ChatIO> chatio = new HashMap<>();
 	private final EventHandler eventhandler;
 	private static Thread eventhandlerthread;
@@ -38,7 +40,7 @@ public class ChatBot
 					}
 					System.gc();
 					try{
-						Thread.sleep(5000);
+						Thread.sleep(chatRefreshDelay);
 					}catch(InterruptedException ie){
 						ie.printStackTrace();
 					}
@@ -65,7 +67,7 @@ public class ChatBot
 	}
 	public static void putMessage(String site, final long roomid, final String message)
 	{
-		System.out.println("Sending message to "+site+" room "+roomid+
+		System.out.println(getDateTime()+" Sending message to "+site+" room "+roomid+
 				" with content \""+message+"\".");
 		if(!chatio.containsKey(site))
 			throw new IllegalStateException("No available IO for site \""+site+"\".");

@@ -93,8 +93,8 @@ public abstract class EventHandler
 			justWaved=false;
 		}
 	};
-	private boolean wave(final ChatEvent event, final String content){
-		switch(content){
+	private boolean wave(final ChatEvent event){
+		switch(event.getContent()){
 			case waveRight:
 				ChatBot.putMessage(event, waveLeft);
 				break;
@@ -109,13 +109,22 @@ public abstract class EventHandler
 		return true;
 	}
 	public abstract void handle(final ChatEvent event);
+	/**
+	 * Runs a command associated with the chat event, if any.
+	 * @param event The chat event
+	 * @return {@code true} iff the input caused a command to execute.
+	 */
 	public boolean runCommand(final ChatEvent event)
 	{
+		System.out.println(utils.Utils.getDateTime()+" "+event.getEventType().toString()+
+				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
+				") in room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
+				") with content \""+event.getContent()+"\"");
 		if(event.getContent()==null)
 			return false;
-		String content = event.getContent().trim();
-		if(!justWaved && wave(event, content))
+		if(!justWaved && wave(event))
 			return true;
+		String content = event.getContent();
 		if(!content.startsWith(trigger))
 			return false;
 		
@@ -147,19 +156,31 @@ public abstract class EventHandler
 		
 		final String cmd = command;
 		countdown.schedule(new TimerTask(){
-			@SuppressWarnings("deprecation")
 			public void run(){
-				//Interrupt the thread
 				System.out.println("Command timed out.");
-				//Kill thread
 				try
 				{
-					while(thread.getState().equals(Thread.State.NEW))
-						Thread.sleep(1);
-					thread.interrupt();
-					Thread.sleep(1000);
-					if(thread.isAlive()){
-						thread.stop();
+					Thread.State s = thread.getState();
+					switch(s)
+					{
+						case NEW:
+							throw new InternalError("Thread not started.");
+						case BLOCKED:
+						case RUNNABLE:
+						case TIMED_WAITING:
+						case WAITING:
+							//Interrupt the thread
+							thread.interrupt();
+							Thread.sleep(1000);
+							if(thread.isAlive()){
+								//Kill thread
+								thread.stop();
+							}
+							break;
+						case TERMINATED:
+							break;
+						default:
+							throw new InternalError("Unknown thread state: ");
 					}
 				}
 				catch(IllegalArgumentException | InterruptedException e)

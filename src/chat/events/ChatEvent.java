@@ -61,7 +61,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		content = unescapeHtml(content);
 		if(content.contains("class=\"onebox"))
 			content=chatsite.getUrl()+search("href=\"([^\"]+)", content);
-		
+		content = content.trim();
 		room_id = getNumValueJSON("room_id", raweventjson);
 		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));
 		user_id = getNumValueJSON("user_id", raweventjson);
@@ -71,11 +71,11 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		//System.out.println("Received event: "+raweventjson);
 	}
 	
+	/**
+	 * For debug purposes only.
+	 */
 	@Override
-	public String toString()
-	{
-		if(content==null)
-			getContent();
+	public String toString(){
 		return varDumpAll();
 	}
 	

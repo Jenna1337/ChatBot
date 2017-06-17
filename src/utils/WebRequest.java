@@ -95,9 +95,17 @@ public class WebRequest
 	}
 	private static synchronized void send(HttpURLConnection connection, String data) throws IOException
 	{
-		connection.setRequestProperty("Content-Length", ""+data.length());
-		connection.connect();
-		OutputStream os = connection.getOutputStream();
-		os.write(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		try{
+			connection.connect();
+			OutputStream os = connection.getOutputStream();
+			os.write(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		}catch(java.net.SocketTimeoutException ste){
+			try{
+				send(connection, data);
+			}
+			catch(StackOverflowError soe){
+				System.err.println("Connection timed out to "+connection.getURL());
+			}
+		}
 	}
 }

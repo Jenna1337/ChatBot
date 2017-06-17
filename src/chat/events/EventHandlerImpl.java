@@ -72,7 +72,7 @@ public class EventHandlerImpl extends EventHandler
 				System.out.println("Handling event "+event.toString());
 				break;
 			case FeedTicker://22
-				String url = utils.Utils.makeMarkdown(event.getContent());
+				//String url = utils.Utils.makeMarkdown(event.getContent());
 				break;
 			case UserSuspended://29
 				System.out.println("Handling event "+event.toString());
