@@ -153,6 +153,7 @@ public class ChatIO
 			synchronized(lock_logged_in){
 				if(!logged_in)
 					throw new IllegalStateException("Not logged in.");
+				leaveRoom(rooms.toArray(new Long[0]));
 				String response_text = GET("https://stackoverflow.com/users/logout");
 				String fkey = search(fkeyHtmlRegex, response_text);
 				POST("https://stackoverflow.com/users/logout", urlencode(new String[][]{
@@ -187,7 +188,7 @@ public class ChatIO
 				LinkedList<String> eventlists = new LinkedList<String>();
 				try
 				{
-					Pattern p = Pattern.compile("\"e\"\\:\\[([^\\]]+)");
+					Pattern p = Pattern.compile("\"e\"\\:\\[(([^\\]]+]*?)+)(?=],)");
 					Matcher m = p.matcher(response);
 					while(m.find())
 						eventlists.add(m.group(1));
@@ -208,7 +209,7 @@ public class ChatIO
 			{
 				System.err.println("Failed to get messages for "+CHATSITE);
 				e.printStackTrace();
-				return null;
+				return new ChatEventList();
 			}
 		}
 	}

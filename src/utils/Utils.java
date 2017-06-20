@@ -113,7 +113,7 @@ public class Utils
 	{
 		String match = "";
 		char QUOTE = '\"';
-		int startindex = rawjson.indexOf(QUOTE+parname+QUOTE+':'+QUOTE);
+		int startindex = rawjson.indexOf(QUOTE+parname+QUOTE+':');
 		if(startindex<0)
 			return "";
 		int index = startindex+parname.length()+3;

@@ -34,10 +34,8 @@ public class ChatBot
 				while(true){
 					ChatEventList eventlist = ChatBot.getAllChatEvents();
 					for(ChatEvent event : eventlist)
-					{
 						if(event.getUserId()!=ChatBot.chatio.get(event.getChatSite().name()).getMyUserId())
 							eventhandler.handle(event);
-					}
 					System.gc();
 					try{
 						Thread.sleep(chatRefreshDelay);

@@ -7,6 +7,8 @@ import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class ChatUser extends JsonObject<ChatUser>
 {
@@ -20,12 +22,16 @@ public class ChatUser extends JsonObject<ChatUser>
 	 * <pre>"//www.gravatar.com/avatar/" + email_hash + "?s=32&d=identicon&r=PG"</pre>
 	 */
 	private String email_hash;
+	/**
+	 * Corresponds to the user's profile picture.<br/>
+	 * Either contains a link to the profile image with a "!" before the "http", or
+	 * <pre>"//www.gravatar.com/avatar/" + email_hash + "?s=32&d=identicon&r=PG"</pre>
+	 */
+	private URL profilePictureURL;
 	/**The user's "about" text.*/
 	private String user_message;
 	/**The URL of the user's profile page.*/
-	private String profileUrl;
-	/**The website where the user signed up*/
-	private String host;
+	private final URL profileUrl;
 	/**The user's reputation.*/
 	private long reputation;
 	/**Indicates whether the user is a moderator or not.*/
@@ -45,8 +51,36 @@ public class ChatUser extends JsonObject<ChatUser>
 	{
 		CHATSITE=chatsite;
 		id=getNumValueJSON("id", rawjson);
+		try
+		{
+			profileUrl=new URL("https://"+chatsite.getUrl()+"/users/"+id);
+		}
+		catch(MalformedURLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError(e);
+		}
+		updateInfo(rawjson, chatsite);
+	}
+	public void updateInfo(String rawjson, ChatSite chatsite)
+	{
 		name=unescapeHtml(getStringValueJSON("name", rawjson));
 		email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
+		try
+		{
+			profilePictureURL = new URL(
+					email_hash.startsWith("!/")
+					?("https://"+chatsite.getUrl()+email_hash.substring(1))
+							:email_hash.startsWith("!")
+							?(email_hash.substring(1))
+									:("https://www.gravatar.com/avatar/"+email_hash+"?s=128"));
+		}
+		catch(MalformedURLException e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		reputation=getNumValueJSON("reputation", rawjson);
 		is_moderator=getBooleanValueJSON("is_moderator", rawjson);
 		is_owner=getBooleanValueJSON("is_owner", rawjson);
@@ -55,15 +89,12 @@ public class ChatUser extends JsonObject<ChatUser>
 		try{
 			String response = GET("https://chat.stackexchange.com/users/thumbs/"+id);
 			user_message = getStringValueJSON("user_message", response);
-			profileUrl = getStringValueJSON("profileUrl", response);
-			host = getStringValueJSON("host", response);
-			//TODO are these required?
-			//"rooms":[{"id":1,"name":"Sandbox","last_post":null,"activity":0}]
 			usage = getStringValueJSON("usage", response);
+			//TODO are these required?
+			/*Chat rooms we can invite this user to*/
 			//"invite_targets":null
 			//"issues":null
 			//boolean is_registered = getBooleanValueJSON("is_registered", response);
-			//boolean may_pairoff = getBooleanValueJSON("may_pairoff", response);
 		}catch(Exception e){
 			
 		}
@@ -74,17 +105,31 @@ public class ChatUser extends JsonObject<ChatUser>
 	public String getName(){
 		return name;
 	}
+	public void setName(String newName){
+		name = newName;
+	}
 	public String getEmailhash(){
 		return email_hash;
+	}
+	public void setEmailhash(String emailHash){
+		email_hash = emailHash;
+	}
+	public URL getProfilePictureURL()
+	{
+		return profilePictureURL;
+	}
+	public void setProfilePictureURL(URL profilePictureURL)
+	{
+		this.profilePictureURL = profilePictureURL;
 	}
 	public String getUserMessage(){
 		return user_message;
 	}
-	public String getProfileUrl(){
-		return profileUrl;
+	public void setUserMessage(String userMessage){
+		user_message = userMessage;
 	}
-	public String getHost(){
-		return host;
+	public URL getProfileUrl(){
+		return profileUrl;
 	}
 	public long getReputation(){
 		return reputation;

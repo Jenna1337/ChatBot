@@ -10,6 +10,7 @@ import java.net.CookieManager;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.GZIPInputStream;
 
@@ -23,6 +24,7 @@ public class WebRequest
 		CookieHandler.setDefault(cook);
 	}
 	private static String[][] headers = new String[0][0];
+	private static Charset chset = java.nio.charset.StandardCharsets.UTF_8;
 	public static synchronized String GET(String url) throws MalformedURLException, IOException
 	{
 		return GET(new URL(url));
@@ -98,13 +100,15 @@ public class WebRequest
 		try{
 			connection.connect();
 			OutputStream os = connection.getOutputStream();
-			os.write(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-		}catch(java.net.SocketTimeoutException ste){
+			os.write(data.getBytes(chset));
+		}catch(Exception e){
 			try{
+				Thread.sleep(1000);
 				send(connection, data);
 			}
-			catch(StackOverflowError soe){
-				System.err.println("Connection timed out to "+connection.getURL());
+			catch(Exception | StackOverflowError err){
+				if(err.getClass().isAssignableFrom(StackOverflowError.class))
+					System.err.println("Connection timed out to "+connection.getURL());
 			}
 		}
 	}
