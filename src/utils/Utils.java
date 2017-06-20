@@ -222,7 +222,7 @@ public class Utils
 		}
 		return text;
 	}
-	private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd_HHmm:ss.SSS");
+	private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss.SSS");
 	static{
 		//new java.util.SimpleTimeZone(rawOffset, ID, startMonth, startDay, startDayOfWeek, startTime, startTimeMode, endMonth, endDay, endDayOfWeek, endTime, endTimeMode, dstSavings)
 		dtf.setTimeZone(TimeZone.getDefault());
