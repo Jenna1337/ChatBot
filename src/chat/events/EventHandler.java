@@ -119,7 +119,7 @@ public abstract class EventHandler
 		System.out.println(utils.Utils.getDateTime()+" "+event.getEventType().toString()+
 				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
 				") in room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
-				") with content \""+event.getContent()+"\"");
+				") with content \""+event.getContent().replace("\"", "\\\"")+"\"");
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))

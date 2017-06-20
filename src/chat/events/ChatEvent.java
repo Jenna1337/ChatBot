@@ -4,6 +4,7 @@ import chat.ChatSite;
 import utils.json.JsonObject;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
+import static utils.Utils.makeLinksMarkdown;
 import static utils.Utils.unescapeHtml;
 import static utils.Utils.search;
 import static utils.WebRequest.GET;
@@ -57,7 +58,8 @@ public class ChatEvent extends JsonObject<ChatEvent>
 				break;
 			default:
 				content = getStringValueJSON("content", raweventjson);
-		}
+		}//test [text](http://www.example.com/ "optional text")
+		content=makeLinksMarkdown(content);
 		content = unescapeHtml(content);
 		if(content.contains("class=\"onebox"))
 			content=chatsite.getUrl()+search("href=\"([^\"]+)", content);

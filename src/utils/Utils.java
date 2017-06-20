@@ -193,7 +193,7 @@ public class Utils
 			{"</?i>","*"},
 			{"\\\\\"","\""},
 			{"\\\\\'","\'"},
-			{"<\\/?code>","\u0096"},
+			{"<\\/?code>","\u0060"},
 	};
 	private static final Matcher htmllinkmatcher = Pattern.compile("<a\\s+.*href=\"([^\"]+)\"(?>\\s+title=\"([^\"]+)\")?[^>]*>(.*)<\\/a>").matcher("");
 	public static String unescapeHtml(String text)
@@ -209,11 +209,10 @@ public class Utils
 				htmlCharacterEntityReferences);
 		return text;
 	}
-	public static String makeMarkdown(String text)
+	public static String makeLinksMarkdown(String text)
 	{
 		if(text==null)
 			return "";
-		text =unescapeHtml(text);
 		htmllinkmatcher.reset(text);
 		while(htmllinkmatcher.find()){
 			String optional = htmllinkmatcher.group(2);
@@ -223,7 +222,7 @@ public class Utils
 		}
 		return text;
 	}
-	private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyyMMdd_HHmm-ss_SSS");
+	private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd_HHmm:ss.SSS");
 	static{
 		//new java.util.SimpleTimeZone(rawOffset, ID, startMonth, startDay, startDayOfWeek, startTime, startTimeMode, endMonth, endDay, endDayOfWeek, endTime, endTimeMode, dstSavings)
 		dtf.setTimeZone(TimeZone.getDefault());
