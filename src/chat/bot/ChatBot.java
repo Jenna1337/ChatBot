@@ -51,7 +51,7 @@ public class ChatBot
 	{
 		eventhandler.setTrigger(trigger);
 	}
-	public static void joinRoom(String site, Long... rooms) throws AuthenticationException, IllegalStateException{
+	public static void joinRoom(String site, Long... rooms){
 		site=site.toUpperCase();
 		System.out.println("Joining "+site+" rooms "+java.util.Arrays.toString(rooms));
 		
@@ -62,6 +62,12 @@ public class ChatBot
 		System.out.println("Leaving "+site+" rooms "+java.util.Arrays.toString(rooms));
 		if(chatio.containsKey(site))
 			chatio.get(site).leaveRoom(rooms);
+	}
+	public static void joinRoom(ChatSite site, Long... rooms){
+		joinRoom(site.toString().toUpperCase());
+	}
+	public static void leaveRoom(ChatSite site, Long... rooms){
+		leaveRoom(site.toString().toUpperCase());
 	}
 	public static void putMessage(String site, final long roomid, final String message)
 	{

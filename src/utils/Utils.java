@@ -2,6 +2,7 @@ package utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
@@ -229,6 +230,14 @@ public class Utils
 	}
 	public static String getDateTime(){
 		return dtf.format(System.currentTimeMillis());
+	}
+	public static Long[] parseLongs(String str)
+	{
+		String[] strs = str.split("[, ;]");
+		Long[] vals = new Long[strs.length];
+		for(int i=0;i<strs.length;++i)
+			vals[i]=new Long(strs[i]);
+		return vals;
 	}
 	
 	private static String[][] htmlCharacterEntityReferences =

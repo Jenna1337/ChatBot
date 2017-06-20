@@ -153,7 +153,8 @@ public class ChatIO
 			synchronized(lock_logged_in){
 				if(!logged_in)
 					throw new IllegalStateException("Not logged in.");
-				leaveRoom(rooms.toArray(new Long[0]));
+				rooms.forEach(this::leaveRoom);
+				//leaveRoom(rooms.toArray(new Long[0]));
 				String response_text = GET("https://stackoverflow.com/users/logout");
 				String fkey = search(fkeyHtmlRegex, response_text);
 				POST("https://stackoverflow.com/users/logout", urlencode(new String[][]{

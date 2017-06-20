@@ -6,6 +6,7 @@ import java.util.TimerTask;
 import java.util.TreeMap;
 import chat.bot.ChatBot;
 import chat.bot.tools.MicroAssembler;
+import static utils.Utils.parseLongs;
 
 public abstract class EventHandler
 {
@@ -76,12 +77,20 @@ public abstract class EventHandler
 			else
 				ChatBot.replyToMessage(event, "Command does not exists.");
 		};
+		Command joinroom = (ChatEvent event, String args)->{
+			ChatBot.joinRoom(event.getChatSite(), parseLongs(args));
+		};
+		Command leaveroom = (ChatEvent event, String args)->{
+			ChatBot.leaveRoom(event.getChatSite(), parseLongs(args));
+		};
 		builtincommands.put("help", listcommands);
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
 		builtincommands.put("asm", assembly);
 		builtincommands.put("learn", learn);
 		builtincommands.put("unlearn", unlearn);
+		builtincommands.put("joinroom", joinroom);
+		builtincommands.put("leaveroom", leaveroom);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
