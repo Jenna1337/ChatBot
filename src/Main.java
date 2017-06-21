@@ -1,7 +1,9 @@
 import java.io.FileReader;
 import java.util.Properties;
+import chat.ChatSite;
 import chat.bot.ChatBot;
 import chat.events.EventHandlerImpl;
+import chat.io.ChatWebSocket;
 
 public class Main
 {
@@ -24,7 +26,11 @@ public class Main
 			Long[] rooms = new Long[siterooms.length];
 			for(int i=0;i<rooms.length;++i)
 				rooms[i] = Long.parseLong(siterooms[i]);
-			ChatBot.joinRoom(site, rooms);
+			ChatBot.joinRoom(ChatSite.valueOf(site.toUpperCase()), rooms);
+		}
+		while(true){
+			Thread.sleep(ChatBot.getDelay()*2);
+			new ChatWebSocket(ChatBot.getChatIO(ChatSite.STACKOVERFLOW), 138769);
 		}
 		//bot.putMessage(sites[0], "ChatBot online.");
 	}

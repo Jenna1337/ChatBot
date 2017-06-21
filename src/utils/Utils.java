@@ -2,7 +2,6 @@ package utils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.regex.Matcher;

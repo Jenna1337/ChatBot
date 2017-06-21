@@ -375,4 +375,12 @@ public class ChatIO
 			cacheChatEventGetterString = urlencode(listtopost.toArray(new String[][]{}));
 		}
 	}
+	public String getFkey()
+	{
+		return fkey;
+	}
+	public String getT()
+	{
+		return t;
+	}
 }
