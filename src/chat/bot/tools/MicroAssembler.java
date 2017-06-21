@@ -1,31 +1,72 @@
 package chat.bot.tools;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.regex.*;
 
+/**
+ * 
+ * @author Jenna Sloan
+ * @version 3.7
+ */
 public final class MicroAssembler{
 	private MicroAssembler(){}
 	/**The registers.*/
 	private static int[] registers = new int[26];
 	
 	/**The index of the instruction to be executed next*/
-	private static volatile int proginstr;
+	private static int proginstr;
 	/**The user-defined labels and the value of their associated line.*/
-	private static Map<String, Integer> labels = new HashMap<String, Integer>();
-	private static volatile byte compval=0;
+	private static Map<String, Integer> labels = new HashMap<>();
+	private static ComparisonMask compval=ComparisonMask.NOP;
+	private static boolean showWarnings = false;
+	private static final Random rand = new Random();
 	
 	/**Greater than; comparison mask*/
-	private static final byte GRT=0b100;
+	private static final byte G=0b100;
 	/**Less than; comparison mask*/
-	private static final byte LSS=1;
+	private static final byte L=1;
 	/**Equal to; comparison mask*/
-	private static final byte EQU=0b10;
+	private static final byte E=0b10;
 	/**No operation; comparison mask*/
-	private static final byte NOP=0;
+	private static final byte N=0;
 	
-	//Reserved: ;=+-*/?&|~<>#"$
+	//TODO add the ability to use these for the jump condition
+	private static enum ComparisonMask{
+		/**No operation*/
+		NOP(N),
+		/**Less than*/
+		LSS(L),
+		/**Equal to*/
+		EQU(E),
+		/**Less than or Equal to*/
+		LEQ(L|E),
+		/**Greater than*/
+		GTR(G),
+		/**NOT Equal to*/
+		NEQ(G|L),
+		/**Greater than or Equal to*/
+		GEQ(G|E),
+		;
+		private final byte m;
+		ComparisonMask(final int mask){
+			m=(byte)mask;
+		}
+		public byte getMask(){return m;}
+	}
+	
+	//Reserved: ;!=+-*/?&|~<>#"$.\
+	//Operators: ;!=+-*/?&|~<>#".
+	//Special use in output: $;\
+	//Not used: ()[]{}%^,':_
+	//Purposely unused: @
 	/**The character to separate lines*/
 	private static final char delimiter=';';
+	/**The character to output data*/
+	private static final char op_out='\"';
+	/**The character to set a register to a random number from 0 to arg2*/
+	private static final char op_rnd='!';
 	/**The character to set registers*/
 	private static final char op_mov='=';
 	/**The character to add registers*/
@@ -50,11 +91,16 @@ public final class MicroAssembler{
 	private static final char op_rgt='>';
 	/**The character to jump to a label*/
 	private static final char op_jmp='#';
-	/**The character to output data*/
-	private static final char op_out='\"';
-	/**The character to output the value of a register*/
+	/**The character to output the value of a register and obtaining values from arguments*/
 	private static final char rvalch = '$';
-	
+	/**Temporary substitute character for rvalch*/
+	private static final char rvalchsub = '\uF024';
+	/**The character to escape the following character*/
+	private static final char escvalch = '\\';
+	/**The escaped version of rvalch*/
+	private static final String rvalchesc = rvalch+""+rvalch;
+	/**Marks the end of the assembly code and beginning of the code's arguments*/
+	private static final String inputseperator = delimiter+".";
 	/**The regex for matching registers.*/
 	private static final String rRegx="[A-Za-z]";
 	/**The regex for printing the value of a register.*/
@@ -69,7 +115,7 @@ public final class MicroAssembler{
 	private static enum Instruction{
 		//Note: OUT has to be first to print all the other ops
 		/**The output instruction*/
-		OUT(op_out,ParType.NotDelim){
+		OUT(op_out,ParType.Text){
 			void action(Object[] args){
 				String txt = (String)args[0];
 				if(txt.matches(contregx)){
@@ -77,14 +123,16 @@ public final class MicroAssembler{
 					while(txt.matches(contregx)){
 						m.find();
 						char ch = m.group(1).charAt(0);
-						txt = txt.replaceAll("\\"+rvalch+ch, ""+registers[correct(ch)]);
+						txt = txt.replace(rvalch+""+ch, ""+registers[correct(ch)]);
 					}
 				}
-				/*
-        for(char ch='a';ch<='z';++ch)
-          txt=txt.replaceAll("$"+ch, ""+registers[correct(ch)]);
-				 */
 				output+=txt;
+			}
+		},
+		/**The set data to a random value from 0 (inclusive) to arg2 (exclusive) instruction*/
+		RND(op_rnd,ParType.AlfaAlfanum){
+			void action(Object[] args){
+				registers[correct((Character)args[0])] = rand.nextInt((Integer)args[1]);
 			}
 		},
 		/**The move data instruction*/
@@ -123,13 +171,13 @@ public final class MicroAssembler{
 				int val1 = registers[correct((Character)args[0])];
 				int val2 = (Integer)args[1];
 				if(val1>val2)
-					compval=GRT;
+					compval=ComparisonMask.GTR;
 				else if(val1<val2)
-					compval=LSS;
+					compval=ComparisonMask.LSS;
 				else if(val1==val2)
-					compval=EQU;
+					compval=ComparisonMask.EQU;
 				else
-					compval=NOP;
+					compval=ComparisonMask.NOP;
 			}
 		},
 		/**The bitwise AND instruction*/
@@ -151,13 +199,13 @@ public final class MicroAssembler{
 				registers[r] = ~registers[r];
 			}
 		},
-		/**The bitshift left without carry instruction*/
+		/**The bit-shift left without carry instruction*/
 		LFT(op_lft,ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] <<= (Integer)args[1];
 			}
 		},
-		/**The bitshift right without carry instruction*/
+		/**The bit-shift right without carry instruction*/
 		RGT(op_rgt,ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] >>>= (Integer)args[1];
@@ -172,7 +220,7 @@ public final class MicroAssembler{
 				String target = ((String)args[1]).toLowerCase();
 				try{
 					int targetline = labels.get(target);
-					if((compval&condition)>0 || condition==(GRT|EQU|LSS))
+					if((compval.getMask()&condition)>0)
 						proginstr = targetline;
 				}catch(NullPointerException npe){
 					throw new IllegalArgumentException("No line found with label \""+target+"\"");
@@ -195,7 +243,7 @@ public final class MicroAssembler{
 			Alfa,
 			AlfaAlfanum,
 			NumWord,
-			NotDelim,
+			Text,
 			;
 		}
 		/**Parses the argument(s)*/
@@ -209,16 +257,15 @@ public final class MicroAssembler{
 				case AlfaAlfanum:
 					if(args.matches(rRegx+rRegx))
 						return new Object[]{args.charAt(0), registers[correct(args.charAt(1))]};
-					if(args.matches(rRegx+"\\d+"))
+					if(args.matches(rRegx+"\\-?\\d+"))
 						return new Object[]{args.charAt(0), Integer.parseInt(args.substring(1))};
 					break;
 				case NumWord:
 					if(args.matches("\\d\\w+") || (args.charAt(0)=='0'))
 						return new Object[]{Integer.parseInt(""+args.charAt(0)), args.substring(1)};
-				case NotDelim:
-					if(args.matches("[^"+delimiter+"]*"))
-						return new Object[]{args};
 					break;
+				case Text:
+					return new Object[]{args};
 				default:
 					throw new InternalError("Invalid kind \""+kind.name()+"\"");
 			}
@@ -242,13 +289,28 @@ public final class MicroAssembler{
 			return ch-'a';
 		throw new IllegalArgumentException("'"+ch+"' is not a valid register.");
 	}
+	public static synchronized String assemble(String input){
+		
+		int argstart = input.indexOf(inputseperator);
+		String arguments = "";
+		if(argstart>=0){
+			arguments = input.substring(argstart+inputseperator.length());
+			input=input.substring(0,argstart);
+		}
+		return assemble(input, arguments);
+	}
 	/**Runs the code specified in <code>input</code> and returns it's output.<br/>
 	 * Format: [label]opcode(parameters)
 	 * @param input The code to assemble and execute.
 	 * @return The output of the assembled code.
 	 */
-	public static synchronized String assemble(String input){
-		String[] lines=input.split(""+delimiter);
+	public static synchronized String assemble(String input, String arguments){
+		String[] progargs=arguments.split(" ");
+		input = input.replace(rvalchesc, ""+rvalchsub);
+		input=input.replace(rvalch+"0", arguments);
+		for(int i=0;i<progargs.length && i<9;++i)
+			input=input.replace(rvalch+""+(i+1), progargs[i]);
+		String[] lines=input.split("(?<!\\"+escvalch+")"+delimiter);
 		Instruction[] lblinstr = new Instruction[lines.length];
 		String[] lblcmds=new String[lines.length];
 		String line;
@@ -257,6 +319,7 @@ public final class MicroAssembler{
 		prolines:
 			for(proginstr=0; proginstr<lines.length;++proginstr){
 				line=lines[proginstr];
+				line=line.replaceAll("\\"+escvalch+"(.)", "$1");
 				for(Instruction instruct : Instruction.values())
 				{
 					char operator = instruct.getMne();
@@ -269,9 +332,9 @@ public final class MicroAssembler{
 						continue prolines;
 					}
 				}
-				if(!line.isEmpty())
-					labels.put(line, proginstr-1);
-				System.out.println("Warning: No valid instruction was found for \""+line+"\".");
+				if(!line.isEmpty() && showWarnings)
+					System.out.println("Warning: No valid instruction was found for \""+line+"\".");
+				labels.put(line, proginstr-1);
 			}
 		output="";
 		try{
@@ -284,6 +347,7 @@ public final class MicroAssembler{
 			}
 		}catch(Exception e){
 		}
+		output = output.replace(""+rvalchsub, ""+rvalch);
 		String retval = output;
 		output="";
 		return retval;

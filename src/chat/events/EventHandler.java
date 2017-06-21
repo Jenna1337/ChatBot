@@ -5,11 +5,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
 import chat.bot.ChatBot;
+import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
 import static utils.Utils.parseLongs;
 
 public abstract class EventHandler
 {
+	private static final boolean DEBUG = false;
 	public interface Command
 	{
 		public abstract void run(ChatEvent event, String args);
@@ -58,7 +60,7 @@ public abstract class EventHandler
 				if(!commands.containsKey(name))
 				{
 					commands.put(name, (ChatEvent _event, String _args)->{
-						ChatBot.putMessage(_event, MicroAssembler.assemble('\"'+text));
+						ChatBot.putMessage(_event, MicroAssembler.assemble('\"'+text, _args));
 					});
 					ChatBot.replyToMessage(event, "Learned command: "+name);
 				}
@@ -83,6 +85,12 @@ public abstract class EventHandler
 		Command leaveroom = (ChatEvent event, String args)->{
 			ChatBot.leaveRoom(event.getChatSite(), parseLongs(args));
 		};
+		Command rolldice = (ChatEvent event, String args)->{
+			ChatBot.putMessage(event, MicroAsmExamples.rolldice(args));
+		};
+		Command fibonacci = (ChatEvent event, String args)->{
+			ChatBot.putMessage(event, MicroAsmExamples.fibonacci(args));
+		};
 		builtincommands.put("help", listcommands);
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
@@ -91,6 +99,8 @@ public abstract class EventHandler
 		builtincommands.put("unlearn", unlearn);
 		builtincommands.put("joinroom", joinroom);
 		builtincommands.put("leaveroom", leaveroom);
+		builtincommands.put("rolldice", rolldice);
+		builtincommands.put("fibonacci", fibonacci);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
@@ -166,6 +176,8 @@ public abstract class EventHandler
 		final String cmd = command;
 		countdown.schedule(new TimerTask(){
 			public void run(){
+				if(DEBUG)
+					return;
 				System.out.println("Command timed out.");
 				try
 				{
