@@ -6,17 +6,14 @@ public enum ChatSite
 	STACKEXCHANGE("chat.stackexchange.com"),
 	;
 	private final String url;
-	private ChatSite(String url)
-	{
+	private ChatSite(String url){
 		this.url=url;
 	}
-	public String getUrl()
-	{
+	public String getUrl(){
 		return url;
 	}
 	@Override
-	public String toString()
-	{
+	public String toString(){
 		return getUrl();
 	}
 }

@@ -58,7 +58,7 @@ public enum EventType{
 	FileAdded(11),
 	/**
 	 * <dt><code>{@link #getEventTypeId()} = 12</code></dt><br/>
-	 * A post was flagged.
+	 * A post was flagged by a moderator.
 	 * TODO: Verify; Might not be possible.
 	 */
 	ModeratorFlag(12),
