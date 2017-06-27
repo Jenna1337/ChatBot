@@ -1,6 +1,7 @@
 package chat.events;
 
 import chat.ChatSite;
+import chat.io.ChatIO;
 import utils.json.JsonObject;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
@@ -59,10 +60,23 @@ public class ChatEvent extends JsonObject<ChatEvent>
 			default:
 				content = getStringValueJSON("content", raweventjson);
 		}//test [text](http://www.example.com/ "optional text")
-		content=makeLinksMarkdown(content);
 		content = unescapeHtml(content);
-		if(content.contains("class=\"onebox"))
-			content=chatsite.getUrl()+search("href=\"([^\"]+)", content);
+		if(content.contains("class=\"onebox")){
+			content=search("href=\"([^\"]+)", content);
+			if(!content.startsWith("http"))
+			{
+				if(content.startsWith("//"))
+					content = ChatIO.getProtocol() + content;
+				else
+				{
+					if(content.charAt(0)!='/')
+						content = '/' + content;
+					content = chatsite.getUrl() + content;
+				}
+			}
+		}
+		else
+			content=makeLinksMarkdown(content);
 		content = content.trim();
 		room_id = getNumValueJSON("room_id", raweventjson);
 		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));

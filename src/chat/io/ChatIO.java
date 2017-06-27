@@ -21,6 +21,8 @@ import static utils.WebRequest.POST;
 
 public class ChatIO
 {
+	private static final boolean secure = true;
+	private static final String protocol = secure?"https":"http";
 	private static final String fkeyHtmlRegex = "name=\"fkey\"\\s+(?>type=\"hidden\"\\s+)?value=\"([^\"]+)\"";
 	private static final String useridHtmlRegex = "id=\"active-user\" class=\"user-container user-(\\d+)\"";
 	private static final String replStr = "\u007F";
@@ -54,7 +56,7 @@ public class ChatIO
 			throw new IllegalStateException("Not logged in to "+chatsite);
 		CHATSITE = chatsite;
 		long roomid = 1;
-		String url = "http://"+CHATSITE.getUrl()+"/rooms/" + roomid;
+		String url = protocol+"://"+CHATSITE.getUrl()+"/rooms/" + roomid;
 		try
 		{
 			String response_text = GET(url);
@@ -157,7 +159,7 @@ public class ChatIO
 				//leaveRoom(rooms.toArray(new Long[0]));
 				String response_text = GET("https://stackoverflow.com/users/logout");
 				String fkey = search(fkeyHtmlRegex, response_text);
-				POST("https://stackoverflow.com/users/logout", urlencode(new String[][]{
+				POST(protocol+"://stackoverflow.com/users/logout", urlencode(new String[][]{
 					{"fkey", fkey},
 					{"returnUrl", "https%3A%2F%2Fstackoverflow.com%2F"}
 				}));
@@ -178,7 +180,7 @@ public class ChatIO
 			String getStr = cacheChatEventGetterString.replace(replStrUrlEnc, t);
 			try
 			{
-				String response = POST("https://"+CHATSITE.getUrl()+"/events", getStr);
+				String response = POST(protocol+"://"+CHATSITE.getUrl()+"/events", getStr);
 				try
 				{
 					t = search("\"t\"\\:(\\d+)", response);
@@ -218,7 +220,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"text", message}
 			}));
@@ -232,7 +234,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE.getUrl()+"/messages/"+messageid, urlencode(new String[][]{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/messages/"+messageid, urlencode(new String[][]{
 				{"fkey", fkey},
 				{"text", message}
 			}));
@@ -246,7 +248,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE.getUrl()+"/users/invite", urlencode(new String[][]{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/users/invite", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"UserId", ""+userid},
 				{"RoomId", ""+roomid}
@@ -262,7 +264,7 @@ public class ChatIO
 	{
 		try
 		{
-			POST("https://"+CHATSITE.getUrl()+"/conversation/new", urlencode(new String[][]{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/conversation/new", urlencode(new String[][]{
 				{"fkey", fkey},
 				{"roomId", ""+roomid},
 				{"firstMessageId", ""+firstMessageId},
@@ -297,7 +299,7 @@ public class ChatIO
 			{
 				try
 				{
-					POST("http://"+CHATSITE.getUrl()+"/chats/leave/"+r, urlencode(new String[][]{
+					POST(protocol+"://"+CHATSITE.getUrl()+"/chats/leave/"+r, urlencode(new String[][]{
 						{"fkey",fkey},
 						{"quiet", "true"}
 					}));
@@ -324,8 +326,8 @@ public class ChatIO
 	{
 		try
 		{
-			String fkey = search(fkeyHtmlRegex, GET("https://chat.stackoverflow.com/users/"+myUserId));
-			POST("https://chat.stackoverflow.com/users/usermessage/"+myUserId, urlencode(new String[][]{
+			String fkey = search(fkeyHtmlRegex, GET(protocol+"://chat.stackoverflow.com/users/"+myUserId));
+			POST(protocol+"://chat.stackoverflow.com/users/usermessage/"+myUserId, urlencode(new String[][]{
 				{"fkey", fkey},
 				{"message", newtext}
 			}));
@@ -343,7 +345,7 @@ public class ChatIO
 			String useridstring = ""+userid[0];
 			for(int i=1;i<userid.length;++i)
 				useridstring+=","+userid[i];
-			return new ChatUserList(POST("https://chat.stackexchange.com/user/info", urlencode(new String[][]{
+			return new ChatUserList(POST(protocol+"://chat.stackexchange.com/user/info", urlencode(new String[][]{
 				{"ids", useridstring},
 				{"roomId", ""+roomid}
 			})), CHATSITE);
@@ -375,12 +377,13 @@ public class ChatIO
 			cacheChatEventGetterString = urlencode(listtopost.toArray(new String[][]{}));
 		}
 	}
-	public String getFkey()
-	{
+	public String getFkey(){
 		return fkey;
 	}
-	public String getT()
-	{
+	public String getT(){
 		return t;
+	}
+	public static String getProtocol(){
+		return protocol;
 	}
 }
