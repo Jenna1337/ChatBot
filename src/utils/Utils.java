@@ -190,7 +190,12 @@ public class Utils
 	 */
 	private static final String[][] replacementRegexes = {
 			{"</?b>","**"},
+			{"</?strong>","**"},
 			{"</?i>","*"},
+			{"</?em>","*"},
+			{"</?strike>","---"},//Note: The <strike> tag is not supported in HTML5
+			{"</?del>","---"},
+			{"</?s>","---"},
 			{"\\\\\"","\""},
 			{"\\\\\'","\'"},
 			{"<\\/?code>","\u0060"},
