@@ -9,9 +9,41 @@ public final class MicroAsmExamples
 	public static String rolldice(String args){
 		return MicroAssembler.assemble(rolldice, args);
 	}
+	
 	private static final String fibonacci = "\"First $1 numbers in the Fibbonacci sequence: ;=d0;=a1;=b1;=c0;l1?d$1;#6end;\"$a, ;=cb;+ba;=ac;+d1;#1l1;end\"...;.7";
 	/**Computes the first $1 values of the Fibonacci sequence*/
 	public static String fibonacci(String args){
 		return MicroAssembler.assemble(fibonacci, args);
 	}
+	
+	private static final String rand2 = ";=l$1;=h$2;?hl;#4two;=hl;=l0;two=nh;-nl;!rn;+rl;\"$r;.";
+	/**Outputs a random number from $1, inclusive, to $2, exclusive. [$1, $2)*/
+	public static String rand2(String args){
+		return MicroAssembler.assemble(rand2, args);
+	}
+	
+	private static final String rand0 = ";!r2;\"$r;.";
+	/**Outputs a random number from 0 to 1, inclusive. [0, 1]*/
+	public static String rand0(String args){
+		return MicroAssembler.assemble(rand0, args);
+	}
+	
+	private static final String rand1 = ";!r$1;\"$r;.";
+	/**Outputs a random number from 0, inclusive, to $1, exclusive. [0, $1)*/
+	public static String rand1(String args){
+		return MicroAssembler.assemble(rand1, args);
+	}
+	
+	private static final String echo = ";\"$0;.";
+	/**Outputs the input*/
+	public static String echo(String args){
+		return MicroAssembler.assemble(echo, args);
+	}
+	
+	private static final String cointoss = ";!a2;?a0;#2h;\"Tails;#7e;h\"Heads;e\";.";
+	/**Simulates a coin flip/toss*/
+	public static String cointoss(String args){
+		return MicroAssembler.assemble(cointoss, args);
+	}
+	
 }

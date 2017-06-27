@@ -91,6 +91,29 @@ public abstract class EventHandler
 		Command fibonacci = (ChatEvent event, String args)->{
 			ChatBot.putMessage(event, MicroAsmExamples.fibonacci(args));
 		};
+		Command rand = (ChatEvent event, String args)->{
+			int argcount = args.trim().split("\\s+").length;
+			switch(argcount){
+				case 0:
+					ChatBot.putMessage(event, MicroAsmExamples.rand0(args));
+					break;
+				case 1:
+					ChatBot.putMessage(event, MicroAsmExamples.rand1(args));
+					break;
+				case 2:
+					ChatBot.putMessage(event, MicroAsmExamples.rand2(args));
+					break;
+				default:
+					ChatBot.putMessage(event, MicroAsmExamples.rand0(args));
+					break;
+			}
+		};
+		Command echo = (ChatEvent event, String args)->{
+			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
+		};
+		Command cointoss = (ChatEvent event, String args)->{
+			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
+		};
 		builtincommands.put("help", listcommands);
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
@@ -101,6 +124,10 @@ public abstract class EventHandler
 		builtincommands.put("leaveroom", leaveroom);
 		builtincommands.put("rolldice", rolldice);
 		builtincommands.put("fibonacci", fibonacci);
+		builtincommands.put("rand", rand);
+		builtincommands.put("echo", echo);
+		builtincommands.put("cointoss", cointoss);
+		builtincommands.put("coinflip", cointoss);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
