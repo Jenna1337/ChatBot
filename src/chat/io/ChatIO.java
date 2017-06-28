@@ -295,7 +295,10 @@ public class ChatIO
 	public void leaveRoom(final Long... room)
 	{
 		for(Long r : room){
-			if(rooms.remove(r))
+			if(r==1){
+				System.out.println("Attempted to leave "+CHATSITE+" sandbox");
+			}
+			else if(rooms.remove(r))
 			{
 				try
 				{
