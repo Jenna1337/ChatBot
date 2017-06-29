@@ -6,10 +6,32 @@ import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import static utils.WebRequest.GET;
 
 public class Utils
 {
 	private Utils(){}
+	
+	public static String eval(String input)
+	{
+		try{
+			String response = GET("http://www4c.wolframalpha.com/input/json.jsp?"+
+					"output=JSON&includepodid=Result&format=plaintext&"+
+					"input="+urlencode(input));
+			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
+					.replace("Wolfram|Alpha", "me").replaceAll("Stephen Wolfram and his team", "somebody");
+			if(result.isEmpty())
+				throw new IllegalArgumentException();
+			return result;
+		}
+		catch(Exception e)
+		{
+			if(!e.getClass().equals(IllegalArgumentException.class))
+				e.printStackTrace();
+			//TODO
+			return "I do not understand.";
+		}
+	}
 	
 	private static HashMap<String, Matcher> jsonmatchers = new HashMap<>();
 	
@@ -115,7 +137,23 @@ public class Utils
 		char QUOTE = '\"';
 		int startindex = rawjson.indexOf(QUOTE+parname+QUOTE+':');
 		if(startindex<0)
-			return "";
+			try{
+				return searchJSON("\""+parname+"\"\\s*:\\s*\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
+			}catch(Exception e){
+				try{
+					return searchJSON("\""+parname+"\"\\\\s*:\\\\s*\'(([^\\\\\']*(\\\\.)?)*)\'", rawjson);
+				}catch(Exception e2){
+					try{
+						return searchJSON("\'"+parname+"\'\\\\s*:\\\\s*\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
+					}catch(Exception e3){
+						try{
+							return searchJSON("\'"+parname+"\'\\\\s*:\\\\s*\'(([^\\\\\']*(\\\\.)?)*)\'", rawjson);
+						}catch(Exception e4){
+							return "";
+						}
+					}
+				}
+			}
 		int index = startindex+parname.length()+3;
 		boolean escapenext = false;
 		char nextchar=rawjson.charAt(++index);
@@ -132,24 +170,6 @@ public class Utils
 			e.printStackTrace();
 		}
 		return match;
-		/*
-		try{
-			return searchJSON("\""+parname+"\":\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
-		}catch(Exception e){
-			try{
-				return searchJSON("\""+parname+"\":\'(([^\\\\\']*(\\\\.)?)*)\'", rawjson);
-			}catch(Exception e2){
-				try{
-					return searchJSON("\'"+parname+"\':\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
-				}catch(Exception e3){
-					try{
-						return searchJSON("\'"+parname+"\':\'(([^\\\\\']*(\\\\.)?)*)\'", rawjson);
-					}catch(Exception e4){
-						return "";
-					}
-				}
-			}
-		}*/
 	}
 	private static Matcher unicodematcher = Pattern.compile("\\\\u(....)").matcher("");
 	private static String replaceUnicodeEscapes(String text)

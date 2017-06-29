@@ -294,8 +294,18 @@ public class ChatIO
 	}
 	public void leaveRoom(final Long... room)
 	{
+		boolean isLogout = false;
+		StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+		for(StackTraceElement stele : trace){
+			String methodname = stele.getMethodName();
+			if(methodname.contains("logout"))
+			{
+				isLogout = true;
+				break;
+			}
+		}
 		for(Long r : room){
-			if(r==1){
+			if(r==1 && !isLogout){
 				System.out.println("Attempted to leave "+CHATSITE+" sandbox");
 			}
 			else if(rooms.remove(r))

@@ -7,6 +7,7 @@ import java.util.TreeMap;
 import chat.bot.ChatBot;
 import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
+import utils.Utils;
 import static utils.Utils.parseLongs;
 
 public abstract class EventHandler
@@ -86,13 +87,34 @@ public abstract class EventHandler
 			ChatBot.leaveRoom(event.getChatSite(), parseLongs(args));
 		};
 		Command rolldice = (ChatEvent event, String args)->{
+			args=args.trim();
+			String[] argarr = args.trim().split("\\s+");
+			int argcount = argarr.length;
+			switch(argcount){
+				case 0:
+					args = "1 6";
+					break;
+				case 1:
+					args = "1 "+args;
+					break;
+				case 2:
+					ChatBot.putMessage(event, MicroAsmExamples.rolldice(args));
+					break;
+				default:
+					args = argarr[0]+" "+argarr[1];
+					break;
+			}
 			ChatBot.putMessage(event, MicroAsmExamples.rolldice(args));
 		};
 		Command fibonacci = (ChatEvent event, String args)->{
+			if(args.trim().isEmpty())
+				args = "0";
 			ChatBot.putMessage(event, MicroAsmExamples.fibonacci(args));
 		};
 		Command rand = (ChatEvent event, String args)->{
-			int argcount = args.trim().split("\\s+").length;
+			args=args.trim();
+			String[] argarr = args.trim().split("\\s+");
+			int argcount = argarr.length;
 			switch(argcount){
 				case 0:
 					ChatBot.putMessage(event, MicroAsmExamples.rand0(args));
@@ -104,15 +126,19 @@ public abstract class EventHandler
 					ChatBot.putMessage(event, MicroAsmExamples.rand2(args));
 					break;
 				default:
+					args = argarr[0]+" "+argarr[1];
 					ChatBot.putMessage(event, MicroAsmExamples.rand0(args));
 					break;
 			}
 		};
-		Command echo = (ChatEvent event, String args)->{
-			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
-		};
+		/*Command echo = (ChatEvent event, String args)->{
+			ChatBot.putMessage(event, MicroAsmExamples.echo(args));
+		};*/
 		Command cointoss = (ChatEvent event, String args)->{
 			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
+		};
+		Command eval = (ChatEvent event, String args)->{
+			ChatBot.replyToMessage(event, Utils.eval(args));
 		};
 		builtincommands.put("help", listcommands);
 		builtincommands.put("list", listcommands);
@@ -125,9 +151,10 @@ public abstract class EventHandler
 		builtincommands.put("rolldice", rolldice);
 		builtincommands.put("fibonacci", fibonacci);
 		builtincommands.put("rand", rand);
-		builtincommands.put("echo", echo);
+		//builtincommands.put("echo", echo);
 		builtincommands.put("cointoss", cointoss);
 		builtincommands.put("coinflip", cointoss);
+		builtincommands.put("eval", eval);
 	}
 	private String trigger;
 	private volatile boolean justWaved = false;
@@ -160,19 +187,37 @@ public abstract class EventHandler
 	 * @param event The chat event
 	 * @return {@code true} iff the input caused a command to execute.
 	 */
-	public boolean runCommand(final ChatEvent event)
+	protected boolean runCommand(final ChatEvent event)
 	{
 		System.out.println(utils.Utils.getDateTime()+" "+event.getEventType().toString()+
 				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
-				") in room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
+				") in "+event.getChatSite()+
+				" room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
 				") with content \""+event.getContent().replace("\"", "\\\"")+"\"");
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))
 			return true;
-		String content = event.getContent();
-		if(!content.startsWith(trigger))
-			return false;
+		String content = event.getContent().trim();
+		
+		switch(event.getEventType()){
+			case UserMentioned:
+			case MessageReply:
+				try{
+					content = content.split(" ", 2)[1];
+				}
+				catch(ArrayIndexOutOfBoundsException aioobe){
+					content = "";
+				}
+				break;
+			case MessagePosted:
+			case MessageEdited:
+				if(!content.startsWith(trigger))
+					return false;
+				else break;
+			default:
+				throw new UnsupportedOperationException(event.getEventType().name());
+		}
 		
 		String[] arr = content.substring(2).split(" ",2);
 		

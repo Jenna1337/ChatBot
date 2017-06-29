@@ -1,12 +1,24 @@
 package chat.events;
 
 import static utils.WebRequest.POST;
+import java.util.Vector;
+import chat.bot.ChatBot;
+import utils.Utils;
 import static utils.Utils.urlencode;
 
 public class EventHandlerImpl extends EventHandler
 {
+	private static Vector<Long> recentevents = new Vector<>(30);
 	public void handle(final ChatEvent event)
 	{
+		//Check if this event was already handled
+		if(recentevents.contains(event.getId()))
+			return;
+		
+		if(recentevents.size()>30)
+			recentevents.remove(0);
+		recentevents.add(event.getId());
+		
 		//System.out.println("Handling event "+event.toString());
 		//TODO Finish the switch cases
 		switch(event.getEventType())
@@ -29,11 +41,12 @@ public class EventHandlerImpl extends EventHandler
 			case UserMentioned://8
 			case MessageReply://18
 				if(!runCommand(event))
-				{/*
-					String message = "";
-					//TODO
-					ChatBot.putMessage(event.getChatSite().name(), event.getRoomId(), message);
-				*/}
+				{
+					String[] arr = event.getContent().substring(2).split(" ",2);
+					final String args = arr.length>1?arr[1].trim():"";
+					if(!args.isEmpty())
+						ChatBot.replyToMessage(event, Utils.eval(args));
+				}
 				break;
 			case MessageFlagged://9
 				break;
