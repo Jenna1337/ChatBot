@@ -203,11 +203,21 @@ public abstract class EventHandler
 		switch(event.getEventType()){
 			case UserMentioned:
 			case MessageReply:
-				try{
-					content = content.split(" ", 2)[1];
+				if(content.contains("@")){
+					try{
+						
+						content = content.split(" ", 2)[1];
+					}
+					catch(ArrayIndexOutOfBoundsException aioobe){
+						//it's an empty mention
+						//TODO reply with "help"?
+						return false;
+					}
 				}
-				catch(ArrayIndexOutOfBoundsException aioobe){
-					content = "";
+				else
+				{
+					//it's a direct reply with a onebox
+					return false;
 				}
 				break;
 			case MessagePosted:
