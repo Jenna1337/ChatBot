@@ -30,7 +30,7 @@ public abstract class EventHandler
 			message+=builtin[0];
 			for(int i=1;i<builtin.length;++i)
 				message+=", "+builtin[i];
-			message+="\nLearned: "+args;
+			message+="\nLearned: ";
 			if(cmds.length>0)
 			{
 				message+=cmds[0];
@@ -72,11 +72,8 @@ public abstract class EventHandler
 			}
 		};
 		Command unlearn = (ChatEvent event, String args)->{
-			if(commands.containsKey(args))
-			{
-				commands.remove(args);
+			if(removeCommand(args))
 				ChatBot.replyToMessage(event, "Forgot command: "+args);
-			}
 			else
 				ChatBot.replyToMessage(event, "Command does not exists.");
 		};
@@ -88,8 +85,8 @@ public abstract class EventHandler
 		};
 		Command rolldice = (ChatEvent event, String args)->{
 			args=args.trim();
-			String[] argarr = args.trim().split("\\s+");
-			int argcount = argarr.length;
+			String[] argarr = args.split("\\s+");
+			int argcount = args.contains(" ")?argarr.length:0;
 			switch(argcount){
 				case 0:
 					args = "1 6";
@@ -114,7 +111,7 @@ public abstract class EventHandler
 		Command rand = (ChatEvent event, String args)->{
 			args=args.trim();
 			String[] argarr = args.trim().split("\\s+");
-			int argcount = argarr.length;
+			int argcount = args.contains(" ")?argarr.length:0;
 			switch(argcount){
 				case 0:
 					ChatBot.putMessage(event, MicroAsmExamples.rand0(args));
@@ -206,7 +203,10 @@ public abstract class EventHandler
 				if(content.contains("@")){
 					try{
 						
-						content = content.split(" ", 2)[1];
+						content = content.replace("@"+ChatBot.getChatIO(
+								event.getChatSite()).getMyUsername(), "").trim();
+						if(content.startsWith(trigger))
+							content = content.substring(0, trigger.length());
 					}
 					catch(ArrayIndexOutOfBoundsException aioobe){
 						//it's an empty mention
@@ -315,16 +315,16 @@ public abstract class EventHandler
 		return canAdd;
 	}
 	/**
-	 * Adds the command to the command list.
-	 * @param command The command to add
-	 * @return {@code true} if the command was added, {@code false} otherwise.
+	 * Removes the command from the command list.
+	 * @param command The command to remove
+	 * @return {@code true} if the command was removed, {@code false} otherwise.
 	 */
 	public boolean removeCommand(String name)
 	{
 		name=name.trim().toLowerCase();
-		boolean canAdd = commands.containsKey(name);
-		if(canAdd)
+		boolean canRemove = commands.containsKey(name);
+		if(canRemove)
 			commands.remove(name);
-		return canAdd;
+		return canRemove;
 	}
 }

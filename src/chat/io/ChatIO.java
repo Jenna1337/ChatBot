@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import javax.security.sasl.AuthenticationException;
 import chat.ChatSite;
 import chat.events.ChatEventList;
+import chat.users.ChatUser;
 import chat.users.ChatUserList;
 import utils.WebRequest;
 import static utils.Utils.search;
@@ -29,7 +30,7 @@ public class ChatIO
 	private static final String replStrUrlEnc = urlencode(replStr);
 	private volatile String fkey;
 	private final ChatSite CHATSITE;
-	private long myUserId;
+	private ChatUser me;
 	private boolean logged_in;
 	private SortedSet<Long> rooms = Collections.synchronizedSortedSet(new java.util.TreeSet<Long>());
 	private boolean firstTime = true;
@@ -80,8 +81,9 @@ public class ChatIO
 				String response_text;
 				try{
 					response_text = GET(url);
-					myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
+					long myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
 					System.out.println(CHATSITE.name()+" user id: "+myUserId);
+					me = getUserInfo(1, myUserId).getFirst();
 				}catch(Exception e){
 					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
 				}
@@ -339,8 +341,8 @@ public class ChatIO
 	{
 		try
 		{
-			String fkey = search(fkeyHtmlRegex, GET(protocol+"://chat.stackoverflow.com/users/"+myUserId));
-			POST(protocol+"://chat.stackoverflow.com/users/usermessage/"+myUserId, urlencode(new String[][]{
+			String fkey = search(fkeyHtmlRegex, GET(protocol+"://chat.stackoverflow.com/users/"+getMyUserId()));
+			POST(protocol+"://chat.stackoverflow.com/users/usermessage/"+getMyUserId(), urlencode(new String[][]{
 				{"fkey", fkey},
 				{"message", newtext}
 			}));
@@ -371,7 +373,7 @@ public class ChatIO
 	}
 	public long getMyUserId()
 	{
-		return myUserId;
+		return me.getId();
 	}
 	private static Comparator<String[]> mappedStringArrayComparator = new Comparator<String[]>()
 	{
@@ -398,5 +400,9 @@ public class ChatIO
 	}
 	public static String getProtocol(){
 		return protocol;
+	}
+	public String getMyUsername()
+	{
+		return me.getName();
 	}
 }
