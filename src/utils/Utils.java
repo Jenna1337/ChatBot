@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import chat.bot.ChatBot;
 import static utils.WebRequest.GET;
 
 public class Utils
@@ -19,7 +20,7 @@ public class Utils
 					"output=JSON&includepodid=Result&format=plaintext&"+
 					"input="+urlencode(input));
 			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
-					.replace("Wolfram|Alpha", "me").replaceAll("Stephen Wolfram and his team", "somebody");
+					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
 			if(result.isEmpty())
 				throw new IllegalArgumentException();
 			return result;

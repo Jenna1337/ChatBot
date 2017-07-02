@@ -7,6 +7,7 @@ import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -47,6 +48,32 @@ public class ChatUser extends JsonObject<ChatUser>
 	/**The corresponding chat site.*/
 	private final ChatSite CHATSITE;
 	
+	public ChatUser(long userid, ChatSite chatsite)
+	{
+		CHATSITE=chatsite;
+		String rawjson;
+		try
+		{
+			rawjson = GET("https://chat.stackoverflow.com/users/thumbs/"+
+					userid+"?showUsage=true");
+		}
+		catch(IOException e)
+		{
+			throw new IllegalArgumentException(e);
+		}
+		id=getNumValueJSON("id", rawjson);
+		try
+		{
+			profileUrl=new URL("https://"+chatsite.getUrl()+"/users/"+id);
+		}
+		catch(MalformedURLException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError(e);
+		}
+		updateInfo(rawjson, chatsite);
+	}
 	public ChatUser(String rawjson, ChatSite chatsite)
 	{
 		CHATSITE=chatsite;
@@ -66,7 +93,12 @@ public class ChatUser extends JsonObject<ChatUser>
 	public void updateInfo(String rawjson, ChatSite chatsite)
 	{
 		name=unescapeHtml(getStringValueJSON("name", rawjson));
+		try{
 		email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
+		}catch(Exception e){
+			//TODO
+			e.printStackTrace();
+		}
 		try
 		{
 			profilePictureURL = new URL(

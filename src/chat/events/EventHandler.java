@@ -202,11 +202,9 @@ public abstract class EventHandler
 			case MessageReply:
 				if(content.contains("@")){
 					try{
-						
-						content = content.replace("@"+ChatBot.getChatIO(
-								event.getChatSite()).getMyUsername(), "").trim();
+						content = content.replace("@"+ChatBot.getMyUserName(), "").trim();
 						if(content.startsWith(trigger))
-							content = content.substring(0, trigger.length());
+							break;
 					}
 					catch(ArrayIndexOutOfBoundsException aioobe){
 						//it's an empty mention
@@ -224,12 +222,13 @@ public abstract class EventHandler
 			case MessageEdited:
 				if(!content.startsWith(trigger))
 					return false;
-				else break;
+				else
+					break;
 			default:
 				throw new UnsupportedOperationException(event.getEventType().name());
 		}
 		
-		String[] arr = content.substring(2).split(" ",2);
+		String[] arr = content.substring(trigger.length()).split(" ",2);
 		
 		final String command=arr[0].trim().toLowerCase();
 		String extra = arr.length>1?arr[1]:"";

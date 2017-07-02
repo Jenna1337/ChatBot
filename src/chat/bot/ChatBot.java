@@ -7,6 +7,7 @@ import chat.events.ChatEvent;
 import chat.events.ChatEventList;
 import chat.events.EventHandler;
 import chat.io.ChatIO;
+import chat.users.ChatUser;
 import static utils.Utils.getDateTime;
 
 public class ChatBot
@@ -94,5 +95,18 @@ public class ChatBot
 	}
 	public static long getDelay(){
 		return chatRefreshDelay;
+	}
+	public static String getMyUserName(){
+		String username = "ERROR";
+		for(ChatSite site : ChatSite.values()){
+			if(chatio.get(site)!=null){
+				username = getMyUserInstance(site).getName();
+				break;
+			}
+		}
+		return username;
+	}
+	public static ChatUser getMyUserInstance(ChatSite site){
+		return chatio.get(site).getMyUserInstance();
 	}
 }

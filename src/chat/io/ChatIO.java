@@ -83,7 +83,7 @@ public class ChatIO
 					response_text = GET(url);
 					long myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
 					System.out.println(CHATSITE.name()+" user id: "+myUserId);
-					me = getUserInfo(1, myUserId).getFirst();
+					me = new ChatUser(myUserId, CHATSITE);
 				}catch(Exception e){
 					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
 				}
@@ -371,8 +371,7 @@ public class ChatIO
 					CHATSITE+" room "+roomid+" userid "+Arrays.toString(userid), e);
 		}
 	}
-	public long getMyUserId()
-	{
+	public long getMyUserId(){
 		return me.getId();
 	}
 	private static Comparator<String[]> mappedStringArrayComparator = new Comparator<String[]>()
@@ -401,8 +400,10 @@ public class ChatIO
 	public static String getProtocol(){
 		return protocol;
 	}
-	public String getMyUsername()
-	{
+	public String getMyUsername(){
 		return me.getName();
+	}
+	public ChatUser getMyUserInstance(){
+		return me;
 	}
 }

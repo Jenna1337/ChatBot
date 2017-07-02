@@ -42,8 +42,8 @@ public class EventHandlerImpl extends EventHandler
 			case MessageReply://18
 				if(!runCommand(event))
 				{
-					String[] arr = event.getContent().substring(2).split(" ",2);
-					final String args = arr.length>1?arr[1].trim():"";
+					final String args = event.getContent().replace(
+							"@"+ChatBot.getMyUserName(), "").trim();
 					if(!args.isEmpty())
 						ChatBot.replyToMessage(event, Utils.eval(args));
 				}
