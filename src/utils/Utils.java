@@ -65,7 +65,7 @@ public class Utils
 					+"&parsetimeout=10"
 					+"&proxycode="+proxycode
 					+"&scantimeout=1"
-					+"&sponsorcategories=true"
+					+"&sponsorcategories=false"
 					+"&statemethod=deploybutton"
 					+"&storesubpodexprs=true"));
 			connection.setRequestProperty("Host", "https://www.wolframalpha.com");
@@ -84,8 +84,9 @@ public class Utils
 			final String res = "\"title\" : \"Result\"", resregx = "\\]\\v+\\t+\\}";
 			if(!response.contains(res))
 				throw new IOException(response);
-			response = response.substring(response.indexOf(res));
-			response = response.split(resregx)[0];
+			response = response.contains(res) ? response.substring(response.indexOf(res))
+					: response.substring(response.indexOf("\"subpods\":"));
+			//response = response.split(resregx)[0];
 			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
 					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
 			if(result.isEmpty() || result.equalsIgnoreCase(getStringValueJSON("title", response)))
