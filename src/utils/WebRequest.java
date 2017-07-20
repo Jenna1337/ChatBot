@@ -73,7 +73,7 @@ public class WebRequest
 			throw new InternalError(e);
 		}
 	}
-	private static synchronized String read(HttpURLConnection connection) throws IOException
+	static synchronized String read(HttpURLConnection connection) throws IOException
 	{
 		connection.connect();
 		String encoding = (connection.getContentEncoding()!=null) ? connection.getContentEncoding().toLowerCase() : "";

@@ -1,5 +1,8 @@
 package utils;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -15,14 +18,19 @@ public class Utils
 	
 	public static String eval(String input)
 	{
+		return eval2(input);/*
 		try{
 			String response = GET("http://www4c.wolframalpha.com/input/json.jsp?"+
-					"output=JSON&includepodid=Result&format=plaintext&"+
+					"output=JSON&includepodid=Result&format=image,plaintext&"+
 					"input="+urlencode(input));
 			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
 					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
 			if(result.isEmpty())
-				throw new IllegalArgumentException();
+			{
+				result = getStringValueJSON("src", response);
+				if(result.isEmpty())
+					throw new IllegalArgumentException("No valid data to display: "+response);
+			}
 			return result;
 		}
 		catch(Exception e)
@@ -30,6 +38,70 @@ public class Utils
 			if(!e.getClass().equals(IllegalArgumentException.class))
 				e.printStackTrace();
 			//TODO
+			return "I do not understand.";
+		}*/
+	}
+	
+	private static String eval2(final String query)
+	{
+		try
+		{
+			final String input = urlencode(query);
+			final String inputurl = "http://www.wolframalpha.com/input/?i="+input;
+			GET(inputurl);
+			GET("http://www.wolframalpha.com/input/cookietest.jsp");
+			final String proxycode = getStringValueJSON("code", 
+					GET("https://www.wolframalpha.com/input/api/v1/code?"
+							+System.currentTimeMillis()*1000));
+			HttpURLConnection connection = WebRequest.request(new URL(""
+					+"https://www.wolframalpha.com/input/json.jsp"
+					+"?async=false"
+					+"&banners=raw"
+					+"&debuggingdata=false"
+					+"&format=image,plaintext"
+					+"&formattimeout=16"
+					+"&input="+input
+					+"&output=JSON"
+					+"&parsetimeout=10"
+					+"&proxycode="+proxycode
+					+"&scantimeout=1"
+					+"&sponsorcategories=true"
+					+"&statemethod=deploybutton"
+					+"&storesubpodexprs=true"));
+			connection.setRequestProperty("Host", "https://www.wolframalpha.com");
+			connection.setRequestProperty("Origin", "https://www.wolframalpha.com");
+			connection.setRequestProperty("Referer", inputurl);
+			connection.setRequestMethod("GET");
+			String response = WebRequest.read(connection);
+			if(response.matches("\\s*"))
+				return "";
+			if(response.contains("\"success\" : false") && response.contains("\"error\" : false")){
+				try{
+					Thread.sleep(5000);
+				}catch(Exception e){}
+				return eval2(query);
+			}
+			final String res = "\"title\" : \"Result\"", resregx = "\\]\\v+\\t+\\}";
+			if(!response.contains(res))
+				throw new IOException(response);
+			response = response.substring(response.indexOf(res));
+			response = response.split(resregx)[0];
+			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
+					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
+			if(result.isEmpty() || result.equalsIgnoreCase(getStringValueJSON("title", response)))
+			{
+				result = getStringValueJSON("src", response);
+				if(result.isEmpty())
+					throw new IllegalArgumentException("No valid data to display: "+response);
+				else
+					result = result.replaceAll("\\\\(.)", "$1");
+			}
+			return result;
+		}
+		catch(IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 			return "I do not understand.";
 		}
 	}
@@ -263,6 +335,25 @@ public class Utils
 		for(int i=0;i<strs.length;++i)
 			vals[i]=new Long(strs[i]);
 		return vals;
+	}
+	private static final String wotdFeedUrl = "http://www.dictionary.com/wordoftheday/wotd.rss";
+	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<link>(.*?)<\\/link>.*?<description>(.*?)<\\/description>.*?<\\/item>",
+			Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher("");
+	public static String getWotd(){
+		try
+		{
+			String text = GET(wotdFeedUrl);
+			wotdMatcher.reset(text);
+			wotdMatcher.find();
+			String output = "["+wotdMatcher.group(2)+"]("+wotdMatcher.group(1)+")";
+			return output;
+		}
+		catch(IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 	private static String[][] htmlCharacterEntityReferences =
