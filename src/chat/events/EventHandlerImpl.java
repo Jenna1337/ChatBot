@@ -2,6 +2,7 @@ package chat.events;
 
 import static utils.WebRequest.POST;
 import java.util.Vector;
+import chat.ChatSite;
 import chat.bot.ChatBot;
 import utils.Utils;
 import static utils.Utils.urlencode;
@@ -9,16 +10,21 @@ import static utils.Utils.urlencode;
 public class EventHandlerImpl extends EventHandler
 {
 	private static Vector<Long> recentevents = new Vector<>(30);
-	public void handle(final ChatEvent event)
+	private static synchronized boolean previouslyHandled(final ChatEvent event)
 	{
 		//Check if this event was already handled
 		if(recentevents.contains(event.getId()))
-			return;
+			return true;
 		
 		if(recentevents.size()>30)
 			recentevents.remove(0);
 		recentevents.add(event.getId());
-		
+		return false;
+	}
+	public synchronized void handle(final ChatEvent event)
+	{
+		if(previouslyHandled(event))
+			return;
 		//System.out.println("Handling event "+event.toString());
 		//TODO Finish the switch cases
 		switch(event.getEventType())
@@ -28,8 +34,14 @@ public class EventHandlerImpl extends EventHandler
 				runCommand(event);
 				break;
 			case UserEntered://3
+				if((event.getRoomId()==138769) 
+						&& event.getChatSite().equals(ChatSite.STACKOVERFLOW))
+					ChatBot.putMessage(event, "Welcome, "+event.getUserName()+"!");
 				break;
 			case UserLeft://4
+				if((event.getRoomId()==138769) 
+						&& event.getChatSite().equals(ChatSite.STACKOVERFLOW))
+					ChatBot.putMessage(event, "User "+event.getUserName()+" left the room.");
 				break;
 			case RoomNameChanged://5
 				break;

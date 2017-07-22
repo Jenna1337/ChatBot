@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.script.ScriptException;
 import chat.bot.ChatBot;
 import static utils.WebRequest.GET;
 
@@ -23,8 +24,7 @@ public class Utils
 			String response = GET("http://www4c.wolframalpha.com/input/json.jsp?"+
 					"output=JSON&includepodid=Result&format=image,plaintext&"+
 					"input="+urlencode(input));
-			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
-					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
+			String result = getStringValueJSON("plaintext", response)
 			if(result.isEmpty())
 			{
 				result = getStringValueJSON("src", response);
@@ -44,6 +44,7 @@ public class Utils
 	
 	private static String eval2(final String query)
 	{
+		String response = null;
 		try
 		{
 			final String input = urlencode(query);
@@ -72,39 +73,58 @@ public class Utils
 			connection.setRequestProperty("Origin", "https://www.wolframalpha.com");
 			connection.setRequestProperty("Referer", inputurl);
 			connection.setRequestMethod("GET");
-			String response = WebRequest.read(connection);
+			response = WebRequest.read(connection);
 			if(response.matches("\\s*"))
 				return "";
-			if(response.contains("\"success\" : false") && response.contains("\"error\" : false")){
-				try{
-					Thread.sleep(5000);
-				}catch(Exception e){}
-				return eval2(query);
-			}
-			final String res = "\"title\" : \"Result\"", resregx = "\\]\\v+\\t+\\}";
-			if(!response.contains(res))
-				throw new IOException(response);
-			response = response.contains(res) ? response.substring(response.indexOf(res))
-					: response.substring(response.indexOf("\"subpods\":"));
-			//response = response.split(resregx)[0];
-			String result = getStringValueJSON("plaintext", response).replaceAll("\\\\n", "\n")
-					.replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
-			if(result.isEmpty() || result.equalsIgnoreCase(getStringValueJSON("title", response)))
-			{
-				result = getStringValueJSON("src", response);
-				if(result.isEmpty())
-					throw new IllegalArgumentException("No valid data to display: "+response);
-				else
-					result = result.replaceAll("\\\\(.)", "$1");
-			}
+			if(containsRegex("\"error\"\\s*:\\s*true",response))
+			//if(response.contains("\"error\" : true"))
+				return "I encountered an error while processing your request.";
+			if(containsRegex("\"success\"\\s*:\\s*true",response))
+			//if(response.contains("\"success\" : false"))
+				return "I do not understand.";
+			String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n"
+					+ "var httpsregex = /[^\\/]+\\/\\/.*/g;\n"
+					+ "var htsec = \"https:\";"
+					+ "var subst = \"&=.$1\";\n"//\u0060$0&=$1\u0060;\n"
+					+ "var pods="+response+".queryresult.pods;"
+					+ "for(var i=0;i<pods.length;++i){"
+					+ "	if(pods[i].title==\"Result\"){"
+					+ "		String(pods[i].subpods[0]);"
+					+ "		//var src = pods[i].subpods[0].img.src;"
+					+ "		//if(pods[i].subpods[0].plaintext==\"\"){ "//
+					+ "		//	var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);"
+					+ "		//	(msg.match(httpsregex) ? msg : htsec+msg);"
+					+ "		//}else{"
+					+ "		//	pods[i].subpods[0].plaintext;"
+					+ "		//}"
+					+ "	}"
+					+ "}";
+			javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
+			Object r = engine.eval(jscmd);
+			String result = (r==null ? "" : r.toString());
+			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
 			return result;
 		}
 		catch(IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return "I do not understand.";
 		}
+		catch(ScriptException | NullPointerException e)
+		{
+			// TODO Auto-generated catch block
+			if(response!=null)
+			{
+				System.err.println("Failed to parse JSON:\n"+response);
+			}
+			e.printStackTrace();
+			return "Failed to parse response";
+		}
+	}
+	
+	public static boolean containsRegex(String regex, String in)
+	{
+		return Pattern.compile(regex).matcher(in).find();
 	}
 	
 	private static HashMap<String, Matcher> jsonmatchers = new HashMap<>();

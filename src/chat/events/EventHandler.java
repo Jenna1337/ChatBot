@@ -107,7 +107,7 @@ public abstract class EventHandler
 				throw new UnsupportedOperationException(event.getEventType().name());
 		}
 		
-		String[] arr = content.substring(trigger.length()).split(" ",2);
+		String[] arr = (content.startsWith(trigger) ? content.substring(trigger.length()) : content).split(" ",trigger.length());
 		
 		final String command=arr[0].trim().toLowerCase();
 		String extra = arr.length>1?arr[1]:"";
@@ -384,24 +384,24 @@ public abstract class EventHandler
 			String cmdname = f.getName().endsWith(cmdfileext) ? 
 					f.getName().substring(0, f.getName().length() - cmdfileext.length())
 					: f.getName();
-			System.out.println("Loading command: "+cmdname);
-			try
-			{
-				String text = "";
-				FileReader reader = new FileReader(f);
-				int ch;
-				while((ch=reader.read())!=-1)
-					text+=(char)ch;
-				reader.close();
-				//TODO read in file contents
-				putCommand(cmdname, text);
-			}
-			catch(IOException e)
-			{
-				System.out.println("Failed to load command: "+cmdname);
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+					System.out.println("Loading command: "+cmdname);
+					try
+					{
+						String text = "";
+						FileReader reader = new FileReader(f);
+						int ch;
+						while((ch=reader.read())!=-1)
+							text+=(char)ch;
+						reader.close();
+						//TODO read in file contents
+						putCommand(cmdname, text);
+					}
+					catch(IOException e)
+					{
+						System.out.println("Failed to load command: "+cmdname);
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 		}
 		System.out.println("Done loading commands...");
 	}
