@@ -1,6 +1,7 @@
 package utils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -17,33 +18,11 @@ public class Utils
 {
 	private Utils(){}
 	
-	public static String eval(String input)
+	public static String eval(String query)
 	{
-		return eval2(input);/*
-		try{
-			String response = GET("http://www4c.wolframalpha.com/input/json.jsp?"+
-					"output=JSON&includepodid=Result&format=image,plaintext&"+
-					"input="+urlencode(input));
-			String result = getStringValueJSON("plaintext", response)
-			if(result.isEmpty())
-			{
-				result = getStringValueJSON("src", response);
-				if(result.isEmpty())
-					throw new IllegalArgumentException("No valid data to display: "+response);
-			}
-			return result;
-		}
-		catch(Exception e)
-		{
-			if(!e.getClass().equals(IllegalArgumentException.class))
-				e.printStackTrace();
-			//TODO
-			return "I do not understand.";
-		}*/
-	}
-	
-	private static String eval2(final String query)
-	{
+		query = query.trim();
+		if(query.equalsIgnoreCase("alive"))
+			return "Cogito ergo sum";
 		String response = null;
 		try
 		{
@@ -75,6 +54,11 @@ public class Utils
 			connection.setRequestMethod("GET");
 			response = WebRequest.read(connection);
 			return parseResponse(response);
+		}
+		catch(ConnectException e)
+		{
+			e.printStackTrace();
+			return "Failed to connect to server";
 		}
 		catch(IOException e)
 		{
