@@ -74,36 +74,7 @@ public class Utils
 			connection.setRequestProperty("Referer", inputurl);
 			connection.setRequestMethod("GET");
 			response = WebRequest.read(connection);
-			if(response.matches("\\s*"))
-				return "";
-			if(containsRegex("\"error\"\\s*:\\s*true",response))
-			//if(response.contains("\"error\" : true"))
-				return "I encountered an error while processing your request.";
-			if(containsRegex("\"success\"\\s*:\\s*true",response))
-			//if(response.contains("\"success\" : false"))
-				return "I do not understand.";
-			String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n"
-					+ "var httpsregex = /[^\\/]+\\/\\/.*/g;\n"
-					+ "var htsec = \"https:\";"
-					+ "var subst = \"&=.$1\";\n"//\u0060$0&=$1\u0060;\n"
-					+ "var pods="+response+".queryresult.pods;"
-					+ "for(var i=0;i<pods.length;++i){"
-					+ "	if(pods[i].title==\"Result\"){"
-					+ "		String(pods[i].subpods[0]);"
-					+ "		//var src = pods[i].subpods[0].img.src;"
-					+ "		//if(pods[i].subpods[0].plaintext==\"\"){ "//
-					+ "		//	var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);"
-					+ "		//	(msg.match(httpsregex) ? msg : htsec+msg);"
-					+ "		//}else{"
-					+ "		//	pods[i].subpods[0].plaintext;"
-					+ "		//}"
-					+ "	}"
-					+ "}";
-			javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
-			Object r = engine.eval(jscmd);
-			String result = (r==null ? "" : r.toString());
-			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
-			return result;
+			return parseResponse(response);
 		}
 		catch(IOException e)
 		{
@@ -122,6 +93,42 @@ public class Utils
 		}
 	}
 	
+	private static String parseResponse(String response) throws ScriptException, NullPointerException
+	{
+		if(response.matches("\\s*"))
+			return "";
+		if(containsRegex("\"error\"\\s*:\\s*true",response))
+		//if(response.contains("\"error\" : true"))
+			return "I encountered an error while processing your request.";
+		if(containsRegex("\"success\"\\s*:\\s*false",response))
+		//if(response.contains("\"success\" : false"))
+			return "I do not understand.";
+		String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n"
+				+ "var httpsregex = /[^\\/]+\\/\\/.*/g;\n"
+				+ "var htsec = \"https:\";"
+				+ "var subst = \"&=.$1\";\n"//\u0060$0&=$1\u0060;\n"
+				+ "var pods="+response+".queryresult.pods;"
+				+ "for(var i=0;i<pods.length;++i){"
+				+ "	if(pods[i].title==\"Result\" || pods[i].title==\"Response\"){"
+				+ "		JSON.stringify(pods[i].subpods[0]);"
+				+ "		/*var src = pods[i].subpods[0].img.src;"
+				+ "		if(pods[i].subpods[0].plaintext==\"\"){ "//
+				+ "			var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);"
+				+ "			(msg.match(httpsregex) ? msg : htsec+msg);"
+				+ "		}else{"
+				+ "			pods[i].subpods[0].plaintext;"
+				+ "		}*/"
+				+ "	}"
+				+ "}";
+		javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
+		Object r = engine.eval(jscmd);
+		String rawjson = (r==null ? "" : r.toString());
+		String plaintext = getStringValueJSON("plaintext", rawjson);
+		String result = (plaintext.isEmpty() ? getStringValueJSON("src", rawjson) : plaintext)
+				.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
+		return result;
+	}
+
 	public static boolean containsRegex(String regex, String in)
 	{
 		return Pattern.compile(regex).matcher(in).find();
