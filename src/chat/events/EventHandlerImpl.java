@@ -9,14 +9,15 @@ import static utils.Utils.urlencode;
 
 public class EventHandlerImpl extends EventHandler
 {
-	private static Vector<Long> recentevents = new Vector<>(30);
+	private static final int recenteventbuffersize = 30;
+	private static Vector<Long> recentevents = new Vector<>(recenteventbuffersize);
 	private static synchronized boolean previouslyHandled(final ChatEvent event)
 	{
 		//Check if this event was already handled
 		if(recentevents.contains(event.getId()))
 			return true;
 		
-		if(recentevents.size()>30)
+		if(recentevents.size()>=recenteventbuffersize)
 			recentevents.remove(0);
 		recentevents.add(event.getId());
 		return false;
