@@ -13,6 +13,7 @@ import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
 import utils.Utils;
 import static utils.Utils.parseLongs;
+import static utils.Utils.urlencode;
 
 public abstract class EventHandler
 {
@@ -65,8 +66,8 @@ public abstract class EventHandler
 	 */
 	protected boolean runCommand(final ChatEvent event)
 	{
-		System.out.println(utils.Utils.getDateTime()+" "+event.getEventType().toString()+
-				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
+		System.out.println(Utils.getDateTime()+" "+event.getEventType().toString()+
+				"(message id "+event.getMessageId()+") by user \""+event.getUserName()+"\" (id "+event.getUserId()+
 				") in "+event.getChatSite()+
 				" room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
 				") with content \""+event.getContent().replace("\"", "\\\"")+"\"");
@@ -81,13 +82,16 @@ public abstract class EventHandler
 			case MessageReply:
 				if(content.contains("@")){
 					try{
-						content = content.replace("@"+ChatBot.getMyUserName(), "").trim();
+						content = content.replace("@"+ChatBot.getMyUserName().replaceAll("\\s", ""), "").trim();
+						if(content.isEmpty())
+							throw new IndexOutOfBoundsException();
 						if(content.startsWith(trigger))
 							break;
 					}
-					catch(ArrayIndexOutOfBoundsException aioobe){
+					catch(IndexOutOfBoundsException aioobe){
 						//it's an empty mention
 						//TODO reply with "help"?
+						ChatBot.replyToMessage(event, "");
 						return false;
 					}
 				}
@@ -117,7 +121,19 @@ public abstract class EventHandler
 		else if(commands.containsKey(command))
 			c = commands.get(command);
 		else{
-			System.out.println("Invalid command: "+command);
+			switch(event.getEventType())
+			{
+				case UserMentioned:
+				case MessageReply:
+					break;
+				case MessagePosted:
+				case MessageEdited:
+					System.out.println("Invalid command: "+command);
+					break;
+				default:
+					System.out.println("Invalid command: "+command);
+					break;
+			}
 			return false;
 		}
 		
@@ -216,7 +232,7 @@ public abstract class EventHandler
 	}
 	private boolean writeCommandFile(String name, String text)
 	{
-		File f = new File(cmdSaveDirectory+name+cmdfileext);
+		File f = new File(cmdSaveDirectory+urlencode(name)+cmdfileext);
 		
 		f.getParentFile().mkdirs();
 		if(f.exists() && f.isFile())
@@ -240,7 +256,7 @@ public abstract class EventHandler
 	}
 	private boolean removeCommandFile(String name)
 	{
-		File f = new File(cmdSaveDirectory+name+cmdfileext);
+		File f = new File(cmdSaveDirectory+urlencode(name)+cmdfileext);
 		f.mkdirs();
 		return f.exists() && f.isFile() && f.delete();
 	}
