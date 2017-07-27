@@ -107,12 +107,20 @@ public class Utils
 		javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
 		Object r = engine.eval(jscmd);
 		String rawjson = (r==null ? "" : r.toString());
-		String plaintext = getStringValueJSON("plaintext", rawjson);
-		String result = (plaintext.isEmpty() ? getStringValueJSON("src", rawjson) : plaintext)
-				.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
+		String result = getStringValueJSON("plaintext", rawjson);
+		if(result.isEmpty())
+		{
+			result = getStringValueJSON("src", rawjson);
+			if(result.startsWith("//"))
+				result = "https:"+result;
+		}
+		else
+			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
 		return result;
 	}
-
+	
+	
+	
 	public static boolean containsRegex(String regex, String in)
 	{
 		return Pattern.compile(regex).matcher(in).find();

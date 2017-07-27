@@ -175,6 +175,10 @@ public class ChatIO
 	}
 	private String cacheChatEventGetterString;
 	private String t="0";
+	/**
+	 * Gets the events to be handled from this ChatIO's main chat server.
+	 * @return a list containing all unread events for this ChatIO.
+	 */
 	public ChatEventList getChatEvents()
 	{
 		synchronized(lock_roomcacheupdate)
@@ -290,9 +294,11 @@ public class ChatIO
 	}
 	public void joinRoom(final Long... room)
 	{
-		for(Long r : room)
-			rooms.add(r);
-		updateChatEventGetterStringCache();
+		synchronized(rooms){
+			for(Long r : room)
+				rooms.add(r);
+			updateChatEventGetterStringCache();
+		}
 	}
 	public void leaveRoom(final Long... room)
 	{
@@ -306,36 +312,42 @@ public class ChatIO
 				break;
 			}
 		}
-		for(Long r : room){
-			if(r==1 && !isLogout){
-				System.out.println("Attempted to leave "+CHATSITE+" sandbox");
-			}
-			else if(rooms.remove(r))
-			{
-				try
-				{
-					POST(protocol+"://"+CHATSITE.getUrl()+"/chats/leave/"+r, urlencode(new String[][]{
-						{"fkey",fkey},
-						{"quiet", "true"}
-					}));
+		synchronized(rooms){
+			for(Long r : room){
+				if(r==1 && !isLogout){
+					System.out.println("Attempted to leave "+CHATSITE+" sandbox");
 				}
-				catch(IOException e)
+				else if(rooms.remove(r))
 				{
-					System.out.println("Failed to leave "+CHATSITE+" room "+r);
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					try
+					{
+						POST(protocol+"://"+CHATSITE.getUrl()+"/chats/leave/"+r, urlencode(new String[][]{
+							{"fkey",fkey},
+							{"quiet", "true"}
+						}));
+					}
+					catch(IOException e)
+					{
+						System.out.println("Failed to leave "+CHATSITE+" room "+r);
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
+			updateChatEventGetterStringCache();
 		}
-		updateChatEventGetterStringCache();
 	}
 	public SortedSet<Long> getRoomSet()
 	{
-		return rooms;
+		synchronized(rooms){
+			return rooms;
+		}
 	}
 	public boolean isInRoom(final Long roomid)
 	{
-		return rooms.contains(roomid);
+		synchronized(rooms){
+			return rooms.contains(roomid);
+		}
 	}
 	public void changeBotAboutText(final String newtext)
 	{

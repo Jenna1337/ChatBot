@@ -11,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.GZIPInputStream;
 
@@ -73,6 +75,12 @@ public class WebRequest
 			throw new InternalError(e);
 		}
 	}
+	/**
+	 * Reads the content from a server.
+	 * @param connection the HttpURLConnection to read data from.
+	 * @return The content read from the server.
+	 * @throws IOException if an IOException occurs.
+	 */
 	static synchronized String read(HttpURLConnection connection) throws IOException
 	{
 		connection.connect();
@@ -95,6 +103,12 @@ public class WebRequest
 		reader.close();
 		return response_text;
 	}
+	/**
+	 * Sends the data to the server via the {@code connection}.
+	 * @param connection the connection to the server to send data to.
+	 * @param data the data to send.
+	 * @throws IOException if an IOException occurs.
+	 */
 	private static synchronized void send(HttpURLConnection connection, String data) throws IOException
 	{
 		try{
@@ -111,5 +125,37 @@ public class WebRequest
 					System.err.println("Connection timed out to "+connection.getURL());
 			}
 		}
+	}
+	/**
+	 * Reads the raw response from a server.
+	 * @param connection the HttpURLConnection to read the raw response from.
+	 * @return The raw response from the server.
+	 * @throws IOException if an IOException occurs.
+	 */
+	public static synchronized String readRaw(HttpURLConnection connection) throws IOException
+	{
+		connection.connect();
+		Map<String,List<String>> headMap = connection.getHeaderFields();
+		String raw = "";
+		//A status line which includes the status code and reason message
+		// (e.g., HTTP/1.1 200 OK).
+		raw += connection.getHeaderField(null)+'\n';
+		//Response header fields
+		for(String head : headMap.keySet())
+		{
+			if(head==null)
+				continue;
+			raw += head + ": ";
+			List<String> vals = headMap.get(head);
+			//Response header field values (e.g., Content-Type: text/html).
+			for(String v : vals)
+				raw += v;
+			raw += '\n';
+		}
+		//An empty line.
+		raw += '\n';
+		//An optional message body.
+		raw += read(connection);
+		return raw;
 	}
 }

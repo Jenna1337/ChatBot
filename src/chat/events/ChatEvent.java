@@ -39,6 +39,9 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	/**The corresponding chat site.*/
 	private final ChatSite CHATSITE;
 	
+	private static final String divStart = "<div cllass='full'>",
+			divEnd = "</div>";
+	
 	public ChatEvent(final String raweventjson, final ChatSite chatsite)
 	{
 		CHATSITE = chatsite;
@@ -78,6 +81,8 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		else
 			content=makeLinksMarkdown(content);
 		content = content.trim();
+		if(content.startsWith(divStart) && content.endsWith(divEnd))
+			content = content.substring(divStart.length(), content.length()-divEnd.length());
 		room_id = getNumValueJSON("room_id", raweventjson);
 		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));
 		user_id = getNumValueJSON("user_id", raweventjson);

@@ -82,6 +82,10 @@ public class ChatBot
 	public static void replyToMessage(ChatEvent event, String message){
 		putMessage(event, ":"+event.getMessageId()+" "+message);
 	}
+	/**
+	 * Gets the events to be handled from all chat sites.
+	 * @return a list containing all unread events
+	 */
 	public static ChatEventList getAllChatEvents()
 	{
 		//System.out.println("Getting chat events from all sites");

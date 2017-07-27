@@ -208,12 +208,14 @@ public abstract class EventHandler
 	public boolean addCommand(String name, String text)
 	{
 		name=name.trim().toLowerCase();
-		boolean canAdd = !(commands.containsKey(name) || builtincommands.containsKey(name));
-		if(canAdd){
-			putCommand(name, text);
-			writeCommandFile(name, text);
+		synchronized(commands){
+			boolean canAdd = !(commands.containsKey(name) || builtincommands.containsKey(name));
+			if(canAdd){
+				putCommand(name, text);
+				writeCommandFile(name, text);
+			}
+			return canAdd;
 		}
-		return canAdd;
 	}
 	/**
 	 * Removes the command from the command list.
@@ -223,12 +225,14 @@ public abstract class EventHandler
 	public boolean removeCommand(String name)
 	{
 		name=name.trim().toLowerCase();
-		boolean canRemove = commands.containsKey(name);
-		if(canRemove){
-			commands.remove(name);
-			removeCommandFile(name);
+		synchronized(commands){
+			boolean canRemove = commands.containsKey(name);
+			if(canRemove){
+				commands.remove(name);
+				removeCommandFile(name);
+			}
+			return canRemove;
 		}
-		return canRemove;
 	}
 	private boolean writeCommandFile(String name, String text)
 	{
@@ -260,7 +264,7 @@ public abstract class EventHandler
 		f.mkdirs();
 		return f.exists() && f.isFile() && f.delete();
 	}
-	
+	/*Built in commands*/
 	{
 		Command listcommands = (ChatEvent event, String args)->{
 			String message = "Available commands:\nBuiltin: ";
@@ -390,6 +394,7 @@ public abstract class EventHandler
 		builtincommands.put("eval", eval);
 		builtincommands.put("room", room);
 	}
+	/*Re-learns previously learned commands*/
 	{
 		File cmddir = new File(cmdSaveDirectory);
 		cmddir.mkdirs();
@@ -409,14 +414,10 @@ public abstract class EventHandler
 						while((ch=reader.read())!=-1)
 							text+=(char)ch;
 						reader.close();
-						//TODO read in file contents
 						putCommand(cmdname, text);
 					}
-					catch(IOException e)
-					{
-						System.out.println("Failed to load command: "+cmdname);
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					catch(IOException e){
+						throw new InternalError("Failed to load command: "+cmdname, e);
 					}
 		}
 		System.out.println("Done loading commands...");
