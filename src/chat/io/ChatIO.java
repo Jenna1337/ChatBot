@@ -64,40 +64,23 @@ public class ChatIO
 			fkey = search(fkeyHtmlRegex, response_text);
 			this.fkey = fkey;
 		}
-		catch(Exception e)
-		{
+		catch(Exception e){
 			throw new AuthenticationException("Failed to get fkey from "+url, e);
 		}
-		new Thread(new Runnable(){
-			public void run(){
-				try
-				{
-					while(!logged_in)
-						Thread.sleep(100);
-				}
-				catch(InterruptedException e1)
-				{
-				}
-				String response_text;
-				try{
-					response_text = GET(url);
-					long myUserId=Long.parseLong(search(useridHtmlRegex, response_text));
-					System.out.println(CHATSITE.name()+" user id: "+myUserId);
-					me = new ChatUser(myUserId, CHATSITE);
-				}catch(Exception e){
-					new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
-				}
-			}
-		}).start();
+		try{
+			long myUserId=Long.parseLong(search(useridHtmlRegex, GET(url)));
+			System.out.println(CHATSITE.name()+" user id: "+myUserId);
+			me = new ChatUser(myUserId, CHATSITE);
+		}catch(Exception e){
+			new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
+		}
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){
 			public void run()
 			{
-				try
-				{
+				try{
 					logout();
 				}
-				catch(AuthenticationException e)
-				{
+				catch(AuthenticationException e){
 					e.printStackTrace();
 				}
 			}
