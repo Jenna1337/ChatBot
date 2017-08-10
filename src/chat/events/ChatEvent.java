@@ -64,7 +64,11 @@ public class ChatEvent extends JsonObject<ChatEvent>
 				content = getStringValueJSON("content", raweventjson);
 		}//test [text](http://www.example.com/ "optional text")
 		content = unescapeHtml(content);
-		if(content.contains("class=\"onebox")){
+		if(content.contains("class=\"ob-post-tag\""))
+		{
+			content = content.replaceAll("\\<(\\w+)[^\\>]*?\\>\\<(\\w+).*?class=\"ob-post-tag[^\\>]*?\\>(.*?)\\<\\/\\2\\>\\<\\/\\1\\>", "[tag:$3]");
+		}
+		if(content.contains("class=\"onebox") || content.contains("class=\"room-mini") || content.contains("class=\"ob-")){
 			content=search("href=\"([^\"]+)", content);
 			if(!content.startsWith("http"))
 			{
@@ -74,7 +78,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 				{
 					if(content.charAt(0)!='/')
 						content = '/' + content;
-					content = chatsite.getUrl() + content;
+					content = ChatIO.getProtocol() + "://" + chatsite.getUrl() + content;
 				}
 			}
 		}
