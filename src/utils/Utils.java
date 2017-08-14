@@ -340,6 +340,10 @@ public class Utils
 		}
 		return text;
 	}
+	private static final String fixedWidthPrefix = "    ";
+	public static String makeFixedWidth(String content){
+		return fixedWidthPrefix+content.replaceAll("(\r\n|\r|\n)", fixedWidthPrefix+"$0");
+	}
 	private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss.SSS");
 	static{
 		//new java.util.SimpleTimeZone(rawOffset, ID, startMonth, startDay, startDayOfWeek, startTime, startTimeMode, endMonth, endDay, endDayOfWeek, endTime, endTimeMode, dstSavings)
@@ -365,7 +369,7 @@ public class Utils
 			String text = GET(wotdFeedUrl);
 			wotdMatcher.reset(text);
 			wotdMatcher.find();
-			String output = "["+wotdMatcher.group(2)+"]("+wotdMatcher.group(1)+")";
+			String output = "Today's Word of the Day is ["+wotdMatcher.group(2)+"]("+wotdMatcher.group(1)+")";
 			return output;
 		}
 		catch(IOException e)

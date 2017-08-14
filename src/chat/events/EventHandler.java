@@ -377,6 +377,9 @@ public abstract class EventHandler
 		Command room = (ChatEvent event, String args)->{
 			ChatBot.putMessage(event, MicroAssembler.assemble("\"https://"+event.getChatSite().getUrl()+"/rooms/$0", args));
 		};
+		Command wotd = (ChatEvent event, String args)->{
+			ChatBot.replyToMessage(event, Utils.getWotd());
+		};
 		builtincommands.put("help", listcommands);
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
@@ -393,6 +396,7 @@ public abstract class EventHandler
 		builtincommands.put("coinflip", cointoss);
 		builtincommands.put("eval", eval);
 		builtincommands.put("room", room);
+		builtincommands.put("wotd", wotd);
 	}
 	/*Re-learns previously learned commands*/
 	{

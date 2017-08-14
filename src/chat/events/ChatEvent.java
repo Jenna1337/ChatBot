@@ -5,9 +5,10 @@ import chat.io.ChatIO;
 import utils.json.JsonObject;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
+import static utils.Utils.makeFixedWidth;
 import static utils.Utils.makeLinksMarkdown;
-import static utils.Utils.unescapeHtml;
 import static utils.Utils.search;
+import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
 
 public class ChatEvent extends JsonObject<ChatEvent>
@@ -82,8 +83,15 @@ public class ChatEvent extends JsonObject<ChatEvent>
 				}
 			}
 		}
-		else
-			content=makeLinksMarkdown(content);
+		else//not a onebox
+		{
+			if(content.startsWith("<pre"))
+			{
+				content = makeFixedWidth(search("<pre[^>]*>([^<]*)<\\/pre>", content));
+			}
+			else
+				content=makeLinksMarkdown(content.replaceAll("[\\*_\\\u0060()\\[\\]]", "\\\\$0"));
+		}
 		content = content.trim();
 		if(content.startsWith(divStart) && content.endsWith(divEnd))
 			content = content.substring(divStart.length(), content.length()-divEnd.length());
