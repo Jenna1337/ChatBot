@@ -47,6 +47,8 @@ public class WebRequest
 		connection.setRequestMethod("POST");
 		connection.setDoOutput(true);
 		send(connection, data);
+		if(connection.getResponseCode()==409)
+			return null;
 		try{
 			return read(connection);
 		}catch(NullPointerException npe){

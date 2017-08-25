@@ -87,35 +87,44 @@ public class Utils
 		if(containsRegex("\"success\"\\s*:\\s*false",response))
 		//if(response.contains("\"success\" : false"))
 			return "I do not understand.";
-		String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n"
-				+ "var httpsregex = /[^\\/]+\\/\\/.*/g;\n"
-				+ "var htsec = \"https:\";"
-				+ "var subst = \"&=.$1\";\n"//\u0060$0&=$1\u0060;\n"
-				+ "var pods="+response+".queryresult.pods;"
-				+ "for(var i=0;i<pods.length;++i){"
-				+ "	if(pods[i].title==\"Result\" || pods[i].title==\"Response\"){"
-				+ "		JSON.stringify(pods[i].subpods[0]);"
-				+ "		/*var src = pods[i].subpods[0].img.src;"
-				+ "		if(pods[i].subpods[0].plaintext==\"\"){ "//
-				+ "			var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);"
-				+ "			(msg.match(httpsregex) ? msg : htsec+msg);"
-				+ "		}else{"
-				+ "			pods[i].subpods[0].plaintext;"
-				+ "		}*/"
-				+ "	}"
-				+ "}";
+		String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n" + 
+				"var httpsregex = /[^\\/]+\\/\\/.*/g;\n" + 
+				"var htsec = \"https:\";\n" + 
+				"var subst = \"&=.$1\";\n" + 
+				"var pods="+response+".queryresult.pods;\n" + 
+				"var output;\n" + 
+				"for(var i=0;i<pods.length;++i)\n" + 
+				"{\n" + 
+				"	if(!(/^.*\\b[Ii]nput\\b.*$/gim).test(pods[i].title))\n" + 
+				"	{\n" + 
+				"		var src = pods[i].subpods[0].img.src;\n" + 
+				"		if(pods[i].subpods[0].plaintext!=\"\")\n" + 
+				"		{\n" + 
+				"			output = pods[i].subpods[0].plaintext.replace('Wolfram|Alpha','"
+				+ChatBot.getMyUserName().replace("'", "\\'")+"').replace('Stephen Wolfram and his team', '"
+				+"somebody".replace("'", "\\'")+"me');\n" + 
+				"		}\n" + 
+				"		else\n" + 
+				"		{\n" + 
+				"			var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);\n" + 
+				"			output = (msg.match(httpsregex) ? msg : htsec+msg);\n" + 
+				"		}\n" +
+				"		break;\n" + 
+				"	}\n" + 
+				"}\n" + 
+				"output";
 		javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
 		Object r = engine.eval(jscmd);
 		String rawjson = (r==null ? "" : r.toString());
-		String result = getStringValueJSON("plaintext", rawjson);
-		if(result.isEmpty())
+		String result = rawjson;//getStringValueJSON("plaintext", rawjson);
+		/*if(result.isEmpty())
 		{
 			result = getStringValueJSON("src", rawjson);
 			if(result.startsWith("//"))
 				result = "https:"+result;
 		}
 		else
-			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");
+			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");*/
 		return result;
 	}
 	
@@ -302,6 +311,7 @@ public class Utils
 	 * List of XML and HTML character entity references - Wikipedia</a>
 	 */
 	private static final String[][] replacementRegexes = {
+			{"[\\*_\\\u0060()\\[\\]]", "$0"},
 			{"</?b>","**"},
 			{"</?strong>","**"},
 			{"</?i>","*"},

@@ -82,7 +82,7 @@ public abstract class EventHandler
 			case MessageReply:
 				if(content.contains("@")){
 					try{
-						content = content.replace("@"+ChatBot.getMyUserName().replaceAll("\\s", ""), "").trim();
+						content = content.replace("@"+ChatBot.getMyUserName().replaceAll("\\s+", ""), "").trim();
 						if(content.isEmpty())
 							throw new IndexOutOfBoundsException();
 						if(content.startsWith(trigger))

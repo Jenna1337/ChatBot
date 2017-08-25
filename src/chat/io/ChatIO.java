@@ -183,7 +183,11 @@ public class ChatIO
 					Pattern p = Pattern.compile("\"e\"\\:\\[(([^\\]]+]*?)+)(?=],)");
 					Matcher m = p.matcher(response);
 					while(m.find())
-						eventlists.add(m.group(1));
+					{
+						String match = m.group(1);
+						if(!eventlists.contains(match))
+							eventlists.add(match);
+					}
 				}
 				catch(Exception e)
 				{
