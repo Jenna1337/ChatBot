@@ -325,7 +325,6 @@ public class ChatIO
 					catch(IOException e)
 					{
 						System.out.println("Failed to leave "+CHATSITE+" room "+r);
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}

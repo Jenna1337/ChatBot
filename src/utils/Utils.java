@@ -67,7 +67,6 @@ public class Utils
 		}
 		catch(ScriptException | NullPointerException e)
 		{
-			// TODO Auto-generated catch block
 			if(response!=null)
 			{
 				System.err.println("Failed to parse JSON:\n"+response);
@@ -239,7 +238,7 @@ public class Utils
 		char QUOTE = '\"';
 		int startindex = rawjson.indexOf(QUOTE+parname+QUOTE+':');
 		if(startindex<0)
-			try{
+			try{//TODO there must be a better regex...
 				return searchJSON("\""+parname+"\"\\s*:\\s*\"(([^\\\\\"]*(\\\\.)?)*)\"", rawjson);
 			}catch(Exception e){
 				try{

@@ -68,7 +68,6 @@ public class ChatUser extends JsonObject<ChatUser>
 		}
 		catch(MalformedURLException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new InternalError(e);
 		}
@@ -84,7 +83,6 @@ public class ChatUser extends JsonObject<ChatUser>
 		}
 		catch(MalformedURLException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new InternalError(e);
 		}
@@ -94,8 +92,9 @@ public class ChatUser extends JsonObject<ChatUser>
 	{
 		name=unescapeHtml(getStringValueJSON("name", rawjson));
 		try{
-		email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
-		}catch(Exception e){
+			email_hash=unescapeHtml(getStringValueJSON("email_hash", rawjson).substring(1));
+		}
+		catch(Exception e){
 			//TODO
 			e.printStackTrace();
 		}
