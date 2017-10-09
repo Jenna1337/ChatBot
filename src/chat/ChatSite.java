@@ -4,6 +4,7 @@ public enum ChatSite
 {
 	STACKOVERFLOW("chat.stackoverflow.com"),
 	STACKEXCHANGE("chat.stackexchange.com"),
+	METASTACKEXCHANGE("chat.meta.stackexchange.com"),
 	;
 	private final String url;
 	private ChatSite(String url){

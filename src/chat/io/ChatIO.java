@@ -124,6 +124,12 @@ public class ChatIO
 						}));
 						String authurl = search("var target = \'([^\']+)", response_text);
 						GET(authurl);
+					case METASTACKEXCHANGE:
+						//TODO add capability for meta chat
+						//Note: Room 1 (The Sandbox) is not available on meta
+						break;
+					default:
+						break;
 				}
 			}
 		}
@@ -301,8 +307,11 @@ public class ChatIO
 		}
 		synchronized(rooms){
 			for(Long r : room){
-				if(r==1 && !isLogout){
+				if((r==1) && !isLogout){
 					System.out.println("Attempted to leave "+CHATSITE+" sandbox");
+				}
+				else if(rooms.size()==1){
+					
 				}
 				else if(rooms.remove(r))
 				{
