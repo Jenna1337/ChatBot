@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.regex.*;
-
+/*
+ * Note: this class is experimental.
+ */
 /**
  * 
  * @author Jenna Sloan
@@ -13,15 +15,14 @@ import java.util.regex.*;
 public final class MicroAssembler{
 	private MicroAssembler(){}
 	/**The registers.*/
-	private static int[] registers = new int[26];
+	private volatile int[] registers = new int[26];
 	
 	/**The index of the instruction to be executed next*/
-	private static int proginstr;
+	private int proginstr;
 	/**The user-defined labels and the value of their associated line.*/
-	private static Map<String, Integer> labels = new HashMap<>();
-	private static ComparisonMask compval=ComparisonMask.NOP;
-	private static boolean showWarnings = false;
-	private static final Random rand = new Random();
+	private Map<String, Integer> labels = new HashMap<>();
+	private ComparisonMask compval=ComparisonMask.NOP;
+	private final Random rand = new Random();
 	
 	/**Greater than; comparison mask*/
 	private static final byte G=0b100;
@@ -32,7 +33,15 @@ public final class MicroAssembler{
 	/**No operation; comparison mask*/
 	private static final byte N=0;
 	
-	//TODO add the ability to use these for the jump condition
+	/**
+	 * You can use the percent character to refer to constants.<br>
+	 * <br>
+	 * Examples:<br>
+	 * <div style="padding-left:12pt">%EQU%<br>
+	 * %=%<br>
+	 * %\ge%<br>
+	 * %less than or equal to%<br></div>
+	 */
 	private static enum ComparisonMask{
 		/**No operation*/
 		NOP(N),
@@ -50,10 +59,64 @@ public final class MicroAssembler{
 		GEQ(G|E),
 		;
 		private final byte m;
+		private final String match;
+		private final String repl_target;
 		ComparisonMask(final int mask){
 			m=(byte)mask;
+			String match_partial="";
+			{
+				final String n="none|nothing|null|nop",
+					l="(less|smaller)[-_ ]?(than)?",
+					e="equals?( to)?",
+					g="(more|greater)[-_ ]?(than)?",
+					o="( or)? ";
+				final String symbol,tex,other;
+				switch(m){
+					case N:
+						symbol= "0";
+						tex="\\\\null";
+						other=n;
+						break;
+					case L:
+						symbol= "\\<";
+						tex="\\<";
+						other=l;
+						break;
+					case E:
+						symbol= "\\=";
+						tex="\\=";
+						other=e;
+						break;
+					case L|E:
+						symbol= "\\<\\=";
+						tex="\\\u2264|\\\\le";
+						other=l+o+e+"|"+e+o+l;
+						break;
+					case G:
+						symbol= "\\>";
+						tex="\\>";
+						other=g;
+						break;
+					case G|L:
+						symbol= "\\!\\=";
+						tex= "\\\u2260|\\\\ne";
+						other="not "+e+"|"+g+o+l+"|"+l+o+g;
+						break;
+					case G|E:
+						symbol= "\\>\\=";
+						tex="\\\u2265|\\\\ge";
+						other=g+o+e+"|"+e+o+g;
+						break;
+					default:
+						throw new InternalError("Undefined case for mask \""+this.name()+'\"');
+				}
+				match_partial=symbol+"|"+tex+"|"+other;
+			}
+			match = this.name()+"|"+match_partial;
+			repl_target = "(?i)(\\"+ch_const+"("+match+")\\"+ch_const+")";
 		}
 		public byte getMask(){return m;}
+		public String getReplTarget(){return repl_target;}
 	}
 	
 	//Reserved: ;!=+-*/?&|~<>#"$.\
@@ -61,6 +124,7 @@ public final class MicroAssembler{
 	//Special use in output: $;\
 	//Not used: ()[]{}%^,':_
 	//Purposely unused: @
+	private static final char ch_const='%';
 	/**The character to separate lines*/
 	private static final char delimiter=';';
 	/**The character to output data*/
@@ -110,12 +174,67 @@ public final class MicroAssembler{
 	/**The Pattern to check if a string contains {@link #regx}.*/
 	private static final Pattern rpat= Pattern.compile(regx);
 	/**The output text.*/
-	private static String output;
+	private String output;
 	/**The various instructions*/
-	private static enum Instruction{
+	private abstract class Instruction{
+		/**The instruction's mnemonic*/
+		private final char mne;
+		/**The instruction's input type*/
+		private final int kind;
+		private Instruction(char mnemonic, int kind){
+			this.mne=mnemonic;
+			this.kind=kind;
+		}
+		/**The action this instruction performs*/
+		abstract void action(Object[] args);
+		/**Input types*/
+		class ParType{
+			static final int
+			Alfa=1,
+			AlfaAlfanum=2,
+			NumWord=3,
+			Text=4
+			;
+		}
+		/**Parses the argument(s)*/
+		private Object[] parseargs(String args)
+		{
+			switch(kind){
+				case ParType.Alfa:
+					if(args.matches(rRegx))
+						return new Object[]{args.charAt(0)};
+					break;
+				case ParType.AlfaAlfanum:
+					if(args.matches(rRegx+rRegx))
+						return new Object[]{args.charAt(0), MicroAssembler.this.registers[correct(args.charAt(1))]};
+					if(args.matches(rRegx+"\\-?\\d+"))
+						return new Object[]{args.charAt(0), Integer.parseInt(args.substring(1))};
+					break;
+				case ParType.NumWord:
+					if(args.matches("\\d\\w+") || (args.charAt(0)=='0'))
+						return new Object[]{Integer.parseInt(""+args.charAt(0)), args.substring(1)};
+					break;
+				case ParType.Text:
+					return new Object[]{args};
+				default:
+					throw new InternalError("Invalid kind "+kind);
+			}
+			throw new IllegalArgumentException("The argument \""+args+"\" is invalid for the \'"+this.getMne()+"\' instruction ");
+		}
+		/**Performs the action with the arguments*/
+		public void performAction(String args){
+			Object[] pargs=parseargs(args);
+			this.action(pargs);
+		}
+		/**Returns this instruction's mnemonic*/
+		public char getMne(){
+			return this.mne;
+		}
+	}
+	Instruction[] instructions = new Instruction[]{
 		//Note: OUT has to be first to print all the other ops
 		/**The output instruction*/
-		OUT(op_out,ParType.Text){
+		new Instruction(op_out,Instruction.ParType.Text){
 			void action(Object[] args){
 				String txt = (String)args[0];
 				if(txt.matches(contregx)){
@@ -123,50 +242,50 @@ public final class MicroAssembler{
 					while(txt.matches(contregx)){
 						m.find();
 						char ch = m.group(1).charAt(0);
-						txt = txt.replace(rvalch+""+ch, ""+registers[correct(ch)]);
+						txt = txt.replace(rvalch+""+ch, ""+MicroAssembler.this.registers[correct(ch)]);
 					}
 				}
 				output+=txt;
 			}
 		},
 		/**The set data to a random value from 0 (inclusive) to arg2 (exclusive) instruction*/
-		RND(op_rnd,ParType.AlfaAlfanum){
+		new Instruction(op_rnd,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] = rand.nextInt((Integer)args[1]);
 			}
 		},
 		/**The move data instruction*/
-		MOV(op_mov,ParType.AlfaAlfanum){
+		new Instruction(op_mov,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] = (Integer)args[1];
 			}
 		},
 		/**The addition instruction*/
-		ADD(op_add,ParType.AlfaAlfanum){
+		new Instruction(op_add,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] += (Integer)args[1];
 			}
 		},
 		/**The subtraction instruction*/
-		SUB(op_sub,ParType.AlfaAlfanum){
+		new Instruction(op_sub,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] -= (Integer)args[1];
 			}
 		},
 		/**The multiplication instruction*/
-		MUL(op_mul,ParType.AlfaAlfanum){
+		new Instruction(op_mul,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] *= (Integer)args[1];
 			}
 		},
 		/**The division instruction*/
-		DIV(op_div,ParType.AlfaAlfanum){
+		new Instruction(op_div,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] /= (Integer)args[1];
 			}
 		},
 		/**The compare instruction*/
-		CMP(op_cmp,ParType.AlfaAlfanum){
+		new Instruction(op_cmp,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				int val1 = registers[correct((Character)args[0])];
 				int val2 = (Integer)args[1];
@@ -181,38 +300,38 @@ public final class MicroAssembler{
 			}
 		},
 		/**The bitwise AND instruction*/
-		AND(op_and,ParType.AlfaAlfanum){
+		new Instruction(op_and,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] &= (Integer)args[1];
 			}
 		},
 		/**The bitwise OR instruction*/
-		ORR(op_orr,ParType.AlfaAlfanum){
+		new Instruction(op_orr,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] |= (Integer)args[1];
 			}
 		},
 		/**The bitwise NOT instruction*/
-		NOT(op_not,ParType.Alfa){
+		new Instruction(op_not,Instruction.ParType.Alfa){
 			void action(Object[] args){
 				int r = correct((Character)args[0]);
 				registers[r] = ~registers[r];
 			}
 		},
 		/**The bit-shift left without carry instruction*/
-		LFT(op_lft,ParType.AlfaAlfanum){
+		new Instruction(op_lft,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] <<= (Integer)args[1];
 			}
 		},
 		/**The bit-shift right without carry instruction*/
-		RGT(op_rgt,ParType.AlfaAlfanum){
+		new Instruction(op_rgt,Instruction.ParType.AlfaAlfanum){
 			void action(Object[] args){
 				registers[correct((Character)args[0])] >>>= (Integer)args[1];
 			}
 		},
 		/**The jump to label instruction*/
-		JMP(op_jmp,ParType.NumWord){
+		new Instruction(op_jmp,Instruction.ParType.NumWord){
 			void action(Object[] args){
 				int condition = (Integer)args[0];
 				if(condition==0)
@@ -226,61 +345,8 @@ public final class MicroAssembler{
 					throw new IllegalArgumentException("No line found with label \""+target+"\"");
 				}
 			}
-		},
-		;
-		/**The instruction's mnemonic*/
-		private final char mne;
-		/**The instruction's input type*/
-		private final ParType kind;
-		private Instruction(char mnemonic, ParType kind){
-			this.mne=mnemonic;
-			this.kind=kind;
 		}
-		/**The action this instruction performs*/
-		abstract void action(Object[] args);
-		/**Input types*/
-		private static enum ParType{
-			Alfa,
-			AlfaAlfanum,
-			NumWord,
-			Text,
-			;
-		}
-		/**Parses the argument(s)*/
-		private Object[] parseargs(String args)
-		{
-			switch(kind){
-				case Alfa:
-					if(args.matches(rRegx))
-						return new Object[]{args.charAt(0)};
-					break;
-				case AlfaAlfanum:
-					if(args.matches(rRegx+rRegx))
-						return new Object[]{args.charAt(0), registers[correct(args.charAt(1))]};
-					if(args.matches(rRegx+"\\-?\\d+"))
-						return new Object[]{args.charAt(0), Integer.parseInt(args.substring(1))};
-					break;
-				case NumWord:
-					if(args.matches("\\d\\w+") || (args.charAt(0)=='0'))
-						return new Object[]{Integer.parseInt(""+args.charAt(0)), args.substring(1)};
-					break;
-				case Text:
-					return new Object[]{args};
-				default:
-					throw new InternalError("Invalid kind \""+kind.name()+"\"");
-			}
-			throw new IllegalArgumentException("The argument \""+args+"\" is invalid for the \'"+this.getMne()+"\' instruction ");
-		}
-		/**Performs the action with the arguments*/
-		public void performAction(String args){
-			Object[] pargs=parseargs(args);
-			this.action(pargs);
-		}
-		/**Returns this instruction's mnemonic*/
-		public char getMne(){
-			return this.mne;
-		}
-	}
+	};
 	/**Return the index of the register referred to by the given character*/
 	private static int correct(char ch){
 		if('A'<=ch && ch<='Z')
@@ -289,7 +355,7 @@ public final class MicroAssembler{
 			return ch-'a';
 		throw new IllegalArgumentException("'"+ch+"' is not a valid register.");
 	}
-	public static synchronized String assemble(String input){
+	public static String assemble(String input){
 		
 		int argstart = input.indexOf(inputseperator);
 		String arguments = "";
@@ -297,19 +363,29 @@ public final class MicroAssembler{
 			arguments = input.substring(argstart+inputseperator.length());
 			input=input.substring(0,argstart);
 		}
-		return assemble(input, arguments);
+		return new MicroAssembler().assemble0(input, arguments);
 	}
 	/**Runs the code specified in <code>input</code> and returns it's output.<br/>
 	 * Format: [label]opcode(parameters)
 	 * @param input The code to assemble and execute.
 	 * @return The output of the assembled code.
 	 */
-	public static synchronized String assemble(String input, String arguments){
+	public static String assemble(String input, String arguments){
+		return new MicroAssembler().assemble0(input, arguments);
+	}
+	/**Runs the code specified in <code>input</code> and returns it's output.<br/>
+	 * Format: [label]opcode(parameters)
+	 * @param input The code to assemble and execute.
+	 * @return The output of the assembled code.
+	 */
+	private String assemble0(String input, String arguments){
 		String[] progargs=arguments.split(" ");
 		input = input.replace(rvalchesc, ""+rvalchsub);
 		input=input.replace(rvalch+"0", arguments);
 		for(int i=0;i<progargs.length && i<9;++i)
 			input=input.replace(rvalch+""+(i+1), progargs[i]);
+		for(ComparisonMask mask : ComparisonMask.values())
+			input=input.replaceAll(mask.getReplTarget(), Integer.toString(mask.getMask()));
 		String[] lines=input.split("(?<!\\"+escvalch+")"+delimiter);
 		Instruction[] lblinstr = new Instruction[lines.length];
 		String[] lblcmds=new String[lines.length];
@@ -320,7 +396,7 @@ public final class MicroAssembler{
 			for(proginstr=0; proginstr<lines.length;++proginstr){
 				line=lines[proginstr];
 				line=line.replaceAll("\\"+escvalch+"(.)", "$1");
-				for(Instruction instruct : Instruction.values())
+				for(Instruction instruct : instructions)
 				{
 					char operator = instruct.getMne();
 					if(line.indexOf(operator)>=0){
@@ -332,8 +408,6 @@ public final class MicroAssembler{
 						continue prolines;
 					}
 				}
-				if(!line.isEmpty() && showWarnings)
-					System.out.println("Warning: No valid instruction was found for \""+line+"\".");
 				labels.put(line, proginstr-1);
 			}
 		output="";
