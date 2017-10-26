@@ -1,6 +1,4 @@
-import java.io.File;
 import java.io.FileReader;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Properties;
 import chat.ChatSite;
