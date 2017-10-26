@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -175,6 +176,17 @@ public class Utils
 		}
 		m.find();
 		return m.group(1);
+	}
+	public static String urldecode(String text)
+	{
+		try
+		{
+			return URLDecoder.decode(text, "UTF-8");
+		}
+		catch(UnsupportedEncodingException e)
+		{
+			throw new InternalError(e);
+		}
 	}
 	public static String urlencode(String text)
 	{
