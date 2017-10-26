@@ -156,7 +156,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	{
 		long t1=this.getTimeStamp();
 		long t2=o.getTimeStamp();
-		return t1>t2?-1:(t1<t2?1:0);
+		return t1>t2?1:(t1<t2?-1:0);
 	}
 
 	private String getRawMessageContentNoException(final long message_id)
