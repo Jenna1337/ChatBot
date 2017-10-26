@@ -10,7 +10,7 @@ public final class MicroAsmExamples
 		return MicroAssembler.assemble(rolldice, args);
 	}
 	
-	private static final String fibonacci = "\"First $1 numbers in the Fibbonacci sequence: ;=d0;=a1;=b1;=c0;l1?d$1;#6end;\"$a, ;=cb;+ba;=ac;+d1;#1l1;end\"...;.7";
+	private static final String fibonacci = "\"First $1 numbers in the Fibonacci sequence: ;=d0;=a1;=b1;=c0;l1?d$1;#6end;\"$a, ;=cb;+ba;=ac;+d1;#1l1;end\"...;.7";
 	/**Computes the first $1 values of the Fibonacci sequence*/
 	public static String fibonacci(String args){
 		return MicroAssembler.assemble(fibonacci, args);
