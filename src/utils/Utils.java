@@ -327,7 +327,7 @@ public class Utils
 			{"\\\\\'","\'"},
 			{"<\\/?code>","\u0060"},
 	};
-	private static final Matcher htmllinkmatcher = Pattern.compile("<a\\s+.*href=\"([^\"]+)\"(?>\\s+title=\"([^\"]+)\")?[^>]*>(.*)<\\/a>").matcher("");
+	private static final Matcher htmllinkmatcher = Pattern.compile("<a(?>\\s+title=\"((?>\\\\.|[^\"])+)\")?\\s+href=\"([^\"]*)\"(?>\\s+title=\"((?>\\\\.|[^\"])+)\")?[^>]*>(.*?)<\\/a>").matcher("");
 	public static String unescapeHtml(String text)
 	{
 		if(text==null)
@@ -347,9 +347,13 @@ public class Utils
 			return "";
 		htmllinkmatcher.reset(text);
 		while(htmllinkmatcher.find()){
-			String optional = htmllinkmatcher.group(2);
-			String replacement = "["+htmllinkmatcher.group(3)+"]("+
-					htmllinkmatcher.group(1)+(optional!=null?(" \""+optional+"\""):"")+")";
+			String optional = htmllinkmatcher.group(1);
+			if(optional==null)
+				optional=htmllinkmatcher.group(3);
+			String replacement = "["+htmllinkmatcher.group(4)+"]("+
+					htmllinkmatcher.group(2)+(
+							optional!=null?(" \""+optional.replaceAll("(\\\\|\"", "\\\\$1")+"\""):""
+							)+")";
 			text=text.replace(htmllinkmatcher.group(), replacement);
 		}
 		return text;
