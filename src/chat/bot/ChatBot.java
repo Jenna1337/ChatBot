@@ -1,6 +1,9 @@
 package chat.bot;
 
+import java.io.File;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import javax.security.sasl.AuthenticationException;
 import chat.ChatSite;
 import chat.events.ChatEvent;
@@ -17,16 +20,32 @@ public class ChatBot
 	private final EventHandler eventhandler;
 	private static Thread eventhandlerthread;
 	public ChatBot(final String login, final String password, 
-			final EventHandler event_handler, String... sites) throws AuthenticationException
+			final EventHandler event_handler, Map<String,Long[]> initialsiterooms) throws AuthenticationException
 	{
 		eventhandler = event_handler;
 		System.out.println("Logging in...");
-		for(String site : sites)
+		for(Entry<String, Long[]> relation : initialsiterooms.entrySet())
 		{
-			site=site.toUpperCase();
+			String site=relation.getKey().toUpperCase();
 			ChatSite chatsite = ChatSite.valueOf(site.toUpperCase());
 			if(!chatio.containsKey(chatsite))
-				chatio.put(chatsite, new ChatIO(chatsite, login, password));
+				chatio.put(chatsite, new ChatIO(chatsite, login, password, relation.getValue()));
+		}
+		for(ChatSite site : ChatSite.values())
+		{
+			Long[] rooms;
+			{
+				File f = new File(eventhandler.getRoomSaveDirectory()+site.name());
+				if(!f.exists())
+					continue;
+				File[] files = f.listFiles();
+				rooms = new Long[files.length];
+				for(int i=0;i<files.length;++i)
+					rooms[i] = Long.parseLong(files[i].getName());
+				//for(File)
+			}
+			System.out.println("Rejoining "+site+" rooms "+java.util.Arrays.toString(rooms));
+			chatio.get(site).joinRoom(rooms);
 		}
 		eventhandlerthread = new Thread(new Runnable()
 		{

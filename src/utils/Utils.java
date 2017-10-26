@@ -143,7 +143,10 @@ public class Utils
 	 * @return The match in <code>in</code> for the first group in <code>regex</code>.
 	 * @throws IllegalArgumentException  If no match was found or if there is no capturing group in the regex
 	 */
-	public static String search(String regex, String in)
+	public static String search(String regex, String in){
+		return search(regex, in, true);
+	}
+	public static String search(String regex, String in, boolean showWarnings)
 	{
 		try
 		{
@@ -154,6 +157,8 @@ public class Utils
 		}
 		catch(Exception e)
 		{
+			if(showWarnings)
+				System.err.println("Warning: Failed to find \""+regex.replaceAll("[\"\\\\]", "\\\\$0")+"\" in \""+in.replaceAll("[\"\\\\]", "\\\\$0")+"\"");
 			throw new IllegalArgumentException(e);
 		}
 	}
@@ -368,6 +373,9 @@ public class Utils
 		for(int i=0;i<strs.length;++i)
 			vals[i]=new Long(strs[i]);
 		return vals;
+	}
+	public static long getUnixTimeMillis(){
+		return System.currentTimeMillis();
 	}
 	private static final String wotdFeedUrl = "http://www.dictionary.com/wordoftheday/wotd.rss";
 	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<link>(.*?)<\\/link>.*?<description>(.*?)<\\/description>.*?<\\/item>",

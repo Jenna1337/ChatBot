@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import chat.ChatSite;
 import chat.bot.ChatBot;
 import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
@@ -25,11 +26,12 @@ public abstract class EventHandler
 	private static final long MAX_COMMAND_TIME = 30000;// 30 seconds
 	private static final long WAVE_TIMER_SLEEP = 60000*5;// 60 seconds *5
 	private static final String waveRight = "o/", waveLeft = "\\o";
-	private static final String cwd = System.getProperty("user.dir");
 	private static final String cmdfileext = ".txt";
 	private static volatile int instanceNumber = 1;
-	private final String cmdSaveDirectory = cwd+"/SEChatBot/"+
-			(instanceNumber++)+"/commands/";
+	private final String savedir = System.getProperty("user.dir")+"/SEChatBot/"
+			+(instanceNumber++);
+	private final String cmdSaveDirectory = savedir+"/commands/";
+	private final String roomSaveDirectory = savedir+"/rooms/";
 	private Map<String, Command> commands = new TreeMap<>();
 	private Map<String, Command> builtincommands = new TreeMap<>();
 	private String trigger;
@@ -56,6 +58,12 @@ public abstract class EventHandler
 		justWaved=true;
 		new Thread(waveTimer, "WaveTimer").start();
 		return true;
+	}
+	public EventHandler(){
+		
+	}
+	public EventHandler(String trigger){
+		this.trigger=trigger;
 	}
 	public abstract void handle(final ChatEvent event);
 	private static volatile int threadNumber = 1;
@@ -190,7 +198,7 @@ public abstract class EventHandler
 		thread.start();
 		return true;
 	}
-	public void setTrigger(String trigger)
+	public final void setTrigger(String trigger)
 	{
 		this.trigger=trigger;
 	}
@@ -205,7 +213,7 @@ public abstract class EventHandler
 	 * @param text The assembly command to add
 	 * @return {@code true} if the command was added, {@code false} otherwise.
 	 */
-	public boolean addCommand(String name, String text)
+	public final boolean addCommand(String name, String text)
 	{
 		name=name.trim().toLowerCase();
 		synchronized(commands){
@@ -222,7 +230,7 @@ public abstract class EventHandler
 	 * @param command The command to remove
 	 * @return {@code true} if the command was removed, {@code false} otherwise.
 	 */
-	public boolean removeCommand(String name)
+	public final boolean removeCommand(String name)
 	{
 		name=name.trim().toLowerCase();
 		synchronized(commands){
@@ -264,6 +272,26 @@ public abstract class EventHandler
 		f.mkdirs();
 		return f.exists() && f.isFile() && f.delete();
 	}
+	private boolean writeRoomFile(ChatSite site, Long[] rooms){
+		boolean success = true;
+		for(long r : rooms)
+		{
+			File f = new File(roomSaveDirectory+site.name()+"/"+r);
+			if(!f.exists())
+				success &= f.mkdirs();
+		}
+		return success;
+	}
+	private boolean deleteRoomFile(ChatSite site, Long[] rooms){
+		boolean deletedall = true;
+		for(long r : rooms)
+		{
+			File f = new File(roomSaveDirectory+site.name()+"/"+r);
+			if(f.exists())
+				deletedall &= f.delete();
+		}
+		return deletedall;
+	}
 	/*Built in commands*/
 	{
 		Command listcommands = (ChatEvent event, String args)->{
@@ -285,7 +313,7 @@ public abstract class EventHandler
 			ChatBot.putMessage(event, message);
 		};
 		Command assembly = (ChatEvent event, String args)->{
-			String message = MicroAssembler.assemble(args);
+			String message = MicroAssembler.assemble(args);//TODO
 			if(message.isEmpty())
 				message = "Invalid input.";
 			ChatBot.replyToMessage(event, message);
@@ -315,10 +343,16 @@ public abstract class EventHandler
 			}
 		};
 		Command joinroom = (ChatEvent event, String args)->{
-			ChatBot.joinRoom(event.getChatSite(), parseLongs(args));
+			ChatSite site = event.getChatSite();
+			Long[] rooms = parseLongs(args);
+			ChatBot.joinRoom(site, rooms);
+			writeRoomFile(site, rooms);			
 		};
 		Command leaveroom = (ChatEvent event, String args)->{
-			ChatBot.leaveRoom(event.getChatSite(), parseLongs(args));
+			ChatSite site = event.getChatSite();
+			Long[] rooms = parseLongs(args);
+			ChatBot.leaveRoom(site, rooms);
+			deleteRoomFile(site, rooms);
 		};
 		Command rolldice = (ChatEvent event, String args)->{
 			args=args.trim();
@@ -421,9 +455,16 @@ public abstract class EventHandler
 						putCommand(cmdname, text);
 					}
 					catch(IOException e){
-						throw new InternalError("Failed to load command: "+cmdname, e);
+						new InternalError("Failed to load command: "+cmdname, e).printStackTrace();
 					}
 		}
 		System.out.println("Done loading commands...");
+	}
+	public final String getCmdSaveDirectory(){
+		return cmdSaveDirectory;
+	}
+	public final String getRoomSaveDirectory()
+	{
+		return roomSaveDirectory;
 	}
 }

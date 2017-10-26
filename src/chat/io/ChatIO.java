@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.security.sasl.AuthenticationException;
@@ -19,6 +20,7 @@ import static utils.Utils.search;
 import static utils.Utils.urlencode;
 import static utils.WebRequest.GET;
 import static utils.WebRequest.POST;
+import static utils.Utils.getUnixTimeMillis;
 
 public class ChatIO
 {
@@ -32,10 +34,11 @@ public class ChatIO
 	private final ChatSite CHATSITE;
 	private ChatUser me;
 	private boolean logged_in;
-	private SortedSet<Long> rooms = Collections.synchronizedSortedSet(new java.util.TreeSet<Long>());
+	private SortedSet<Long> rooms = Collections.synchronizedSortedSet(new TreeSet<Long>());
 	private boolean firstTime = true;
 	private static Object lock_logged_in = new Object();
 	private static Object lock_roomcacheupdate = new Object();
+	private SortedSet<Long> initialRooms;
 	static{
 		String[][] headers = {
 				{"Accept", "*/*"},
@@ -50,14 +53,13 @@ public class ChatIO
 		};
 		WebRequest.setDefaultHeaders(headers);
 	}
-	public ChatIO(final ChatSite chatsite, final String email, final String password) throws AuthenticationException, IllegalStateException
+	public ChatIO(final ChatSite chatsite, final String email, final String password, Long[] longs) throws AuthenticationException, IllegalStateException
 	{
 		login(chatsite, email, password);
 		if(!isLoggedIn())
 			throw new IllegalStateException("Not logged in to "+chatsite);
 		CHATSITE = chatsite;
-		long roomid = 1;
-		String url = protocol+"://"+CHATSITE.getUrl()+"/rooms/" + roomid;
+		String url = protocol+"://"+CHATSITE.getUrl()+"/rooms/" + longs[0];
 		try
 		{
 			String response_text = GET(url);
@@ -85,6 +87,8 @@ public class ChatIO
 				}
 			}
 		}));
+		this.initialRooms = new TreeSet<Long>(Arrays.asList(longs));
+		joinRoom(longs);
 	}
 	private synchronized void login(final ChatSite site, final String email, final String password) throws AuthenticationException
 	{
@@ -108,7 +112,6 @@ public class ChatIO
 							{"ssrc", "head"},
 						});
 						response_text = POST("https://stackoverflow.com/users/login", post_data);
-						System.out.println("Successfully logged in.");// Success
 						break;
 					case STACKEXCHANGE:
 						response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
@@ -122,11 +125,22 @@ public class ChatIO
 							{"affId", "11"},
 							{"fkey", fkey},
 						}));
-						String authurl = search("var target = \'([^\']+)", response_text);
-						GET(authurl);
+						GET(search("var target = \'([^\']+)", response_text));
+						break;
 					case METASTACKEXCHANGE:
-						//TODO add capability for meta chat
-						//Note: Room 1 (The Sandbox) is not available on meta
+						response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
+							{"from", "https://meta.stackexchange.com/users/login#log-in"},
+							{"_", Long.toString(getUnixTimeMillis())}
+						}));
+						response_text = GET(response_text);
+						fkey = search(fkeyHtmlRegex,response_text);
+						response_text = POST("https://openid.stackexchange.com/affiliate/form/login/submit", urlencode(new String[][]{
+							{"email", email},
+							{"password", password},
+							{"affId", "11"},
+							{"fkey", fkey},
+						}));
+						GET(search("var target = \'([^\']+)", response_text));
 						break;
 					default:
 						break;
@@ -137,6 +151,7 @@ public class ChatIO
 		{
 			throw new AuthenticationException("Failed to login", e);
 		}
+		System.out.println("Successfully logged in to"+site.getUrl());// Success
 		logged_in=true;
 	}
 	private synchronized void logout() throws AuthenticationException
@@ -178,10 +193,12 @@ public class ChatIO
 				String response = POST(protocol+"://"+CHATSITE.getUrl()+"/events", getStr);
 				try
 				{
-					t = search("\"t\"\\:(\\d+)", response);
+					t = search("\"t\"\\:(\\d+)", response, false);
 				}
 				catch(IllegalArgumentException iae)
 				{
+					if(t==null)
+						t = "0";
 				}
 				LinkedList<String> eventlists = new LinkedList<String>();
 				try
@@ -305,13 +322,19 @@ public class ChatIO
 				break;
 			}
 		}
+		ArrayList<Long> cantleave = new ArrayList<>();
 		synchronized(rooms){
 			for(Long r : room){
-				if((r==1) && !isLogout){
-					System.out.println("Attempted to leave "+CHATSITE+" sandbox");
+				if((this.CHATSITE.equals(ChatSite.STACKOVERFLOW)
+						|| this.CHATSITE.equals(ChatSite.STACKEXCHANGE))
+						&& (r==1) && !isLogout){
+					System.out.println("Attempted to leave sandbox room of "+CHATSITE);
 				}
-				else if(rooms.size()==1){
-					
+				else if(rooms.size()==1 && !isLogout){
+					System.out.println("Attempted to leave last room of "+CHATSITE);
+				}
+				else if(initialRooms.contains(r)){
+					cantleave.add(r);
 				}
 				else if(rooms.remove(r))
 				{
@@ -392,6 +415,7 @@ public class ChatIO
 		synchronized(lock_roomcacheupdate){
 			ArrayList<String[]> listtopost = new ArrayList<>();
 			listtopost.add(new String[]{"fkey", fkey});
+			
 			for(long roomid : rooms)
 				listtopost.add(new String[]{"r"+roomid, replStr});
 			Collections.sort(listtopost, mappedStringArrayComparator);

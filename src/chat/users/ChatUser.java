@@ -1,6 +1,7 @@
 package chat.users;
 
 import chat.ChatSite;
+import utils.Utils;
 import utils.json.JsonObject;
 import static utils.Utils.getBooleanValueJSON;
 import static utils.Utils.getNumValueJSON;
@@ -54,8 +55,9 @@ public class ChatUser extends JsonObject<ChatUser>
 		String rawjson;
 		try
 		{
-			rawjson = GET("https://chat.stackoverflow.com/users/thumbs/"+
-					userid+"?showUsage=true");
+			rawjson = GET("https://"+CHATSITE.getUrl()+"/users/thumbs/"+
+					userid+"?showUsage=true"+
+							"&_="+Utils.getUnixTimeMillis());
 		}
 		catch(IOException e)
 		{
