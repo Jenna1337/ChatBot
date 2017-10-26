@@ -15,6 +15,7 @@ import chat.bot.tools.MicroAssembler;
 import utils.Utils;
 import static utils.Utils.parseLongs;
 import static utils.Utils.urlencode;
+import static utils.Utils.urldecode;
 
 public abstract class EventHandler
 {
@@ -244,7 +245,7 @@ public abstract class EventHandler
 	}
 	private boolean writeCommandFile(String name, String text)
 	{
-		File f = new File(cmdSaveDirectory+urlencode(name)+cmdfileext);
+		File f = new File(cmdSaveDirectory+urlencode_cmd(name.toLowerCase())+cmdfileext);
 		
 		f.getParentFile().mkdirs();
 		if(f.exists() && f.isFile())
@@ -268,7 +269,7 @@ public abstract class EventHandler
 	}
 	private boolean removeCommandFile(String name)
 	{
-		File f = new File(cmdSaveDirectory+urlencode(name)+cmdfileext);
+		File f = new File(cmdSaveDirectory+urlencode_cmd(name)+cmdfileext);
 		f.mkdirs();
 		return f.exists() && f.isFile() && f.delete();
 	}
@@ -440,9 +441,9 @@ public abstract class EventHandler
 		System.out.println("Loading external commands...");
 		for(File f : cmdfiles)
 		{
-			String cmdname = f.getName().endsWith(cmdfileext) ? 
+			String cmdname = urldecode_cmd(f.getName().endsWith(cmdfileext) ? 
 					f.getName().substring(0, f.getName().length() - cmdfileext.length())
-					: f.getName();
+					: f.getName());
 					System.out.println("Loading command: "+cmdname);
 					try
 					{
@@ -459,6 +460,13 @@ public abstract class EventHandler
 					}
 		}
 		System.out.println("Done loading commands...");
+	}
+	public static String urlencode_cmd(String name){
+		return urlencode(name.toLowerCase()).replace('%', 'P');
+	}
+	public static String urldecode_cmd(String name)
+	{
+		return urldecode(name.replace('P', '%').toLowerCase());
 	}
 	public final String getCmdSaveDirectory(){
 		return cmdSaveDirectory;
