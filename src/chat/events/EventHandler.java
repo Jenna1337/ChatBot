@@ -12,6 +12,7 @@ import chat.ChatSite;
 import chat.bot.ChatBot;
 import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
+import chat.io.ErrorMessages;
 import utils.Utils;
 import static utils.Utils.parseLongs;
 import static utils.Utils.urlencode;
@@ -19,7 +20,7 @@ import static utils.Utils.urldecode;
 
 public abstract class EventHandler
 {
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = Utils.isdebuggerrunning();
 	private interface Command
 	{
 		public abstract void run(ChatEvent event, String args);
@@ -68,6 +69,9 @@ public abstract class EventHandler
 	}
 	public abstract void handle(final ChatEvent event);
 	private static volatile int threadNumber = 1;
+	private static final java.util.function.Supplier<String> myPingable=()->{ 
+		return "@"+ChatBot.getMyUserName().replaceAll("\\s+","");
+	};
 	/**
 	 * Runs a command associated with the chat event, if any.
 	 * @param event The chat event
@@ -76,38 +80,39 @@ public abstract class EventHandler
 	protected boolean runCommand(final ChatEvent event)
 	{
 		System.out.println(Utils.getDateTime()+" "+event.getEventType().toString()+
-				"(message id "+event.getMessageId()+") by user \""+event.getUserName()+"\" (id "+event.getUserId()+
-				") in "+event.getChatSite()+
-				" room \""+event.getRoomName()+"\" (id "+event.getRoomId()+
-				") with content \""+event.getContent().replace("\"", "\\\"")+"\"");
+				"(message id "+event.getMessageId()+") in "+
+				event.getChatSite()+"/rooms/"+event.getRoomId()+'/'+event.getRoomName()+
+				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
+				") \""+event.getContent().replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")+'\"');
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))
 			return true;
 		String content = event.getContent().trim();
-		
+		String myName = myPingable.get();
 		switch(event.getEventType()){
 			case UserMentioned:
 			case MessageReply:
-				if(content.contains("@")){
+				if(content.contains(myName)){
 					try{
-						content = content.replace("@"+ChatBot.getMyUserName().replaceAll("\\s+", ""), "").trim();
-						if(content.isEmpty())
+						if(content.replace("\\s*"+myName+"\\s*", "").trim().isEmpty())
 							throw new IndexOutOfBoundsException();
-						if(content.startsWith(trigger))
+						if(content.startsWith(trigger)){
+							content = content.replace(myName, "").trim();
 							break;
+						}
 					}
 					catch(IndexOutOfBoundsException aioobe){
 						//it's an empty mention
 						//TODO reply with "help"?
-						ChatBot.replyToMessage(event, "");
+						ChatBot.replyToMessage(event, '@'+event.getUserName());
 						return false;
 					}
 				}
 				else
 				{
 					//it's a direct reply with a onebox
-					return false;
+					return true;
 				}
 				break;
 			case MessagePosted:
@@ -120,7 +125,7 @@ public abstract class EventHandler
 				throw new UnsupportedOperationException(event.getEventType().name());
 		}
 		
-		String[] arr = (content.startsWith(trigger) ? content.substring(trigger.length()) : content).split(" ",trigger.length());
+		String[] arr = (content.startsWith(trigger) ? content.substring(trigger.length()) : content).split(" ",2);
 		
 		final String command=arr[0].trim().toLowerCase();
 		String extra = arr.length>1?arr[1]:"";
@@ -185,7 +190,7 @@ public abstract class EventHandler
 						case TERMINATED:
 							break;
 						default:
-							throw new InternalError("Unknown thread state: ");
+							throw new InternalError("Unknown thread state: " + s.name());
 					}
 				}
 				catch(IllegalArgumentException | InterruptedException e)
@@ -316,7 +321,7 @@ public abstract class EventHandler
 		Command assembly = (ChatEvent event, String args)->{
 			String message = MicroAssembler.assemble(args);//TODO
 			if(message.isEmpty())
-				message = "Invalid input.";
+				message = ErrorMessages.badInput(event);
 			ChatBot.replyToMessage(event, message);
 		};
 		Command learn = (ChatEvent event, String args)->{
@@ -327,7 +332,7 @@ public abstract class EventHandler
 				if(addCommand(name, text))
 					ChatBot.replyToMessage(event, "Learned command: "+name);
 				else
-					ChatBot.replyToMessage(event, "Command already exists.");
+					ChatBot.replyToMessage(event, ErrorMessages.cmdAlreadyExists(event));
 			}
 			else{
 			}
@@ -338,9 +343,9 @@ public abstract class EventHandler
 			else
 			{
 				if(builtincommands.containsKey(args))
-					ChatBot.replyToMessage(event, "I'm sorry "+event.getUserName()+", I'm afraid I can't do that.");
+					ChatBot.replyToMessage(event, ErrorMessages.cannotForgetCmd(event));
 				else
-					ChatBot.replyToMessage(event, "Command does not exists.");
+					ChatBot.replyToMessage(event, ErrorMessages.commandNotFound(event));
 			}
 		};
 		Command joinroom = (ChatEvent event, String args)->{
@@ -357,7 +362,7 @@ public abstract class EventHandler
 		};
 		Command rolldice = (ChatEvent event, String args)->{
 			args=args.trim();
-			String[] argarr = args.split("\\s+");
+			String[] argarr = args.split("\\s+|(?=<\\d)d(?=\\d)|(?=<\\\\d)d|d(?=\\\\d)");
 			int argcount = args.contains(" ")?argarr.length:0;
 			switch(argcount){
 				case 0:
@@ -368,7 +373,7 @@ public abstract class EventHandler
 					break;
 				case 2:
 					ChatBot.putMessage(event, MicroAsmExamples.rolldice(args));
-					break;
+					return;
 				default:
 					args = argarr[0]+" "+argarr[1];
 					break;

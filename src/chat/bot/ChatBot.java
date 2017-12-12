@@ -10,6 +10,7 @@ import chat.events.ChatEvent;
 import chat.events.ChatEventList;
 import chat.events.EventHandler;
 import chat.io.ChatIO;
+import chat.io.ErrorMessages;
 import chat.users.ChatUser;
 import static utils.Utils.getDateTime;
 
@@ -85,6 +86,7 @@ public class ChatBot
 	}
 	public static void putMessage(ChatSite site, final long roomid, final String message)
 	{
+		if(message.trim().isEmpty()) return;
 		System.out.println(getDateTime()+" Sending message to "+site+" room "+roomid+
 				" with content \""+message+"\".");
 		if(!chatio.containsKey(site))
@@ -96,6 +98,10 @@ public class ChatBot
 		io.putMessage(roomid, message);
 	}
 	public static void putMessage(final ChatEvent event, final String message){
+		if(message.trim().isEmpty()){
+			putMessage(event.getChatSite(), event.getRoomId(), ErrorMessages.getMessage(event));
+			return;
+		}
 		putMessage(event.getChatSite(), event.getRoomId(), message);
 	}
 	public static void replyToMessage(ChatEvent event, String message){

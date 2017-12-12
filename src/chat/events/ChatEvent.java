@@ -3,6 +3,7 @@ package chat.events;
 import chat.ChatSite;
 import chat.io.ChatIO;
 import utils.json.JsonObject;
+import static utils.Utils.containsRegex;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.makeFixedWidth;
@@ -40,8 +41,14 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	/**The corresponding chat site.*/
 	private final ChatSite CHATSITE;
 	
-	private static final String divStart = "<div cllass='full'>",
+	private static final String divStart = "<div class='full'>",
 			divEnd = "</div>";
+	
+	private static final String regex_tag="\\<(\\w+)[^\\>]*?\\>\\<(\\w+).*?class=\"ob-post-tag[^\\>]*?\\>(.*?)\\<\\/\\2\\>\\<\\/\\1\\>";
+	private static final String regex_onebox="class=\"(?>onebox|room-mini|ob-)";
+	private static final String regex_href="href=\"([^\"]+)";
+	private static final String regex_pre="(?s)<pre[^>]*>(.*?)<\\/pre>";
+	
 	
 	public ChatEvent(final String raweventjson, final ChatSite chatsite)
 	{
@@ -67,10 +74,10 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		content = unescapeHtml(content);
 		if(content.contains("class=\"ob-post-tag\""))
 		{
-			content = content.replaceAll("\\<(\\w+)[^\\>]*?\\>\\<(\\w+).*?class=\"ob-post-tag[^\\>]*?\\>(.*?)\\<\\/\\2\\>\\<\\/\\1\\>", "[tag:$3]");
+			content = content.replaceAll(regex_tag, "[tag:$3]");
 		}
-		if(content.contains("class=\"onebox") || content.contains("class=\"room-mini") || content.contains("class=\"ob-")){
-			content=search("href=\"([^\"]+)", content);
+		if(containsRegex(regex_onebox, content)){
+			content=search(regex_href, content);
 			if(!content.startsWith("http"))
 			{
 				if(content.startsWith("//"))
@@ -87,10 +94,10 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		{
 			if(content.startsWith("<pre"))
 			{
-				content = makeFixedWidth(search("<pre[^>]*>(.*?)<\\/pre>", content));
+				content = makeFixedWidth(search(regex_pre, content));
 			}
 			else
-				content=makeLinksMarkdown(content);
+				content=makeLinksMarkdown(content, chatsite.getUrl());
 		}
 		content = content.trim();
 		if(content.startsWith(divStart) && content.endsWith(divEnd))

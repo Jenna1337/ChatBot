@@ -234,6 +234,7 @@ public class ChatIO
 	}
 	public void putMessage(final long roomid, final String message)
 	{
+		if(message.trim().isEmpty()) return;
 		try
 		{
 			POST(protocol+"://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{

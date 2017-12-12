@@ -13,11 +13,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.script.ScriptException;
 import chat.bot.ChatBot;
+import chat.io.ChatIO;
 import static utils.WebRequest.GET;
 
 public class Utils
 {
+	
 	private Utils(){}
+	
+	private static final boolean debuggerRunning = 
+			java.lang.management.ManagementFactory.getRuntimeMXBean()
+			.getInputArguments().toString().contains("suspend=y");
+	public static boolean isdebuggerrunning(){
+		return debuggerRunning;
+	}
 	
 	public static String eval(String query)
 	{
@@ -82,10 +91,10 @@ public class Utils
 		if(response.matches("\\s*"))
 			return "";
 		if(containsRegex("\"error\"\\s*:\\s*true",response))
-		//if(response.contains("\"error\" : true"))
+			//if(response.contains("\"error\" : true"))
 			return "I encountered an error while processing your request.";
 		if(containsRegex("\"success\"\\s*:\\s*false",response))
-		//if(response.contains("\"success\" : false"))
+			//if(response.contains("\"success\" : false"))
 			return "I do not understand.";
 		String jscmd = "var regex = /.*=image\\/([^&]*).*/g;\n" + 
 				"var httpsregex = /[^\\/]+\\/\\/.*/g;\n" + 
@@ -338,6 +347,7 @@ public class Utils
 			{"\\\\\"","\""},
 			{"\\\\\'","\'"},
 			{"<\\/?code>","\u0060"},
+			{"<\\s*br\\s*>","\u0060"},
 	};
 	private static final Matcher htmllinkmatcher = Pattern.compile("<a(?>\\s+title=\"((?>\\\\.|[^\"])+)\")?\\s+href=\"([^\"]*)\"(?>\\s+title=\"((?>\\\\.|[^\"])+)\")?[^>]*>(.*?)<\\/a>").matcher("");
 	public static String unescapeHtml(String text)
@@ -353,7 +363,20 @@ public class Utils
 				htmlCharacterEntityReferences);
 		return text;
 	}
-	public static String makeLinksMarkdown(String text)
+	private static final java.util.function.BinaryOperator<String> linkcorrector = (link, chatsite)->{
+		
+		if(link.startsWith("//"))
+			link = ChatIO.getProtocol() + link;
+		else
+		{
+			if(link.charAt(0)!='/')
+				link = '/' + link;
+			link = ChatIO.getProtocol() + "://" + chatsite + link;
+		}
+		return link;
+	};
+	
+	public static String makeLinksMarkdown(String text, String siteref)
 	{
 		if(text==null)
 			return "";
@@ -363,7 +386,7 @@ public class Utils
 			if(optional==null)
 				optional=htmllinkmatcher.group(3);
 			String replacement = "["+htmllinkmatcher.group(4)+"]("+
-					htmllinkmatcher.group(2)+(
+					linkcorrector.apply(htmllinkmatcher.group(2),siteref)+(
 							optional!=null?(" \""+optional.replaceAll("(\\\\|\"", "\\\\$1")+"\""):""
 							)+")";
 			text=text.replace(htmllinkmatcher.group(), replacement);
@@ -411,6 +434,11 @@ public class Utils
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	private static final java.util.Random rand = new java.util.Random();
+	public static <T> T randomElement(T[] arr){
+		return arr[rand.nextInt(arr.length)];
 	}
 	
 	private static String[][] htmlCharacterEntityReferences =
