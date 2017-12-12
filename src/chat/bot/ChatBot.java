@@ -99,7 +99,7 @@ public class ChatBot
 	}
 	public static void putMessage(final ChatEvent event, final String message){
 		if(message.trim().isEmpty()){
-			putMessage(event.getChatSite(), event.getRoomId(), ErrorMessages.getMessage(event));
+			putMessage(event, ErrorMessages.generic(event));
 			return;
 		}
 		putMessage(event.getChatSite(), event.getRoomId(), message);
