@@ -2,6 +2,7 @@ package chat.events;
 
 import chat.ChatSite;
 import chat.io.ChatIO;
+import utils.Utils;
 import utils.json.JsonObject;
 import static utils.Utils.containsRegex;
 import static utils.Utils.getNumValueJSON;
@@ -58,6 +59,13 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		id = getNumValueJSON("id", raweventjson);
 		message_id = getNumValueJSON("message_id", raweventjson);
 		message_stars = getNumValueJSON("message_stars", raweventjson);
+		room_id = getNumValueJSON("room_id", raweventjson);
+		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));
+		user_id = getNumValueJSON("user_id", raweventjson);
+		user_name = unescapeHtml(getStringValueJSON("user_name", raweventjson));
+		parent_id = getNumValueJSON("parent_id", raweventjson);
+		target_user_id = getNumValueJSON("target_user_id", raweventjson);
+		content = unescapeHtml(getStringValueJSON("content", raweventjson));
 		/*
 		 * Note: the value of the JSON "content" may not be the entire message.
 		 */
@@ -66,12 +74,11 @@ public class ChatEvent extends JsonObject<ChatEvent>
 			case MessageEdited:
 			case UserMentioned:
 			case MessageReply:
-				content = getRawMessageContentNoException(message_id);
+				if(content!=null && content.startsWith("<div class='partial'>"))
+				content = unescapeHtml(getRawMessageContentNoException(message_id));
 				break;
 			default:
-				content = getStringValueJSON("content", raweventjson);
-		}//test [text](http://www.example.com/ "optional text")
-		content = unescapeHtml(content);
+		}
 		if(content.contains("class=\"ob-post-tag\""))
 		{
 			content = content.replaceAll(regex_tag, "[tag:$3]");
@@ -102,12 +109,6 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		content = content.trim();
 		if(content.startsWith(divStart) && content.endsWith(divEnd))
 			content = content.substring(divStart.length(), content.length()-divEnd.length());
-		room_id = getNumValueJSON("room_id", raweventjson);
-		room_name = unescapeHtml(getStringValueJSON("room_name", raweventjson));
-		user_id = getNumValueJSON("user_id", raweventjson);
-		user_name = unescapeHtml(getStringValueJSON("user_name", raweventjson));
-		parent_id = getNumValueJSON("parent_id", raweventjson);
-		target_user_id = getNumValueJSON("target_user_id", raweventjson);
 		//System.out.println("Received event: "+raweventjson);
 	}
 	
@@ -168,15 +169,17 @@ public class ChatEvent extends JsonObject<ChatEvent>
 
 	private String getRawMessageContentNoException(final long message_id)
 	{
+		String url ="https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id;
 		try
 		{
 			if(message_id==0)
 				return null;
-			return GET("https://"+CHATSITE.getUrl()+"/message/"+message_id);
+			return GET(url);
 		}
 		catch(Exception e)
 		{
 			System.err.println("Failed to read message id "+message_id);
+			System.err.println(url);
 			return null;
 		}
 	}
