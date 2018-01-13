@@ -1,4 +1,5 @@
 package utils;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -8,6 +9,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -138,6 +140,14 @@ public class Utils
 	}
 	
 	
+	
+	public static Properties loadProperties(String filename) throws IOException{
+		Properties props = new Properties();
+		FileReader reader = new FileReader(filename);
+		props.load(reader);
+		reader.close();
+		return props;
+	}
 	
 	public static boolean containsRegex(String regex, String in)
 	{

@@ -420,10 +420,12 @@ public final class MicroAssembler{
 					instr.performAction(lblcmds[proginstr]);
 			}
 		}catch(Exception e){
+			e.printStackTrace();
 		}
 		output = output.replace(""+rvalchsub, ""+rvalch);
 		String retval = output;
 		output="";
+		System.out.println("Returning string: "+retval);
 		return retval;
 	}
 }

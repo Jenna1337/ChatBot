@@ -2,7 +2,6 @@ package chat.events;
 
 import chat.ChatSite;
 import chat.io.ChatIO;
-import utils.Utils;
 import utils.json.JsonObject;
 import static utils.Utils.containsRegex;
 import static utils.Utils.getNumValueJSON;

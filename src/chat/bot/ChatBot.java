@@ -1,17 +1,21 @@
 package chat.bot;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import javax.security.sasl.AuthenticationException;
 import chat.ChatSite;
 import chat.events.ChatEvent;
 import chat.events.ChatEventList;
 import chat.events.EventHandler;
+import chat.events.EventHandlerImpl;
 import chat.io.ChatIO;
 import chat.io.ErrorMessages;
 import chat.users.ChatUser;
+import utils.Utils;
 import static utils.Utils.getDateTime;
 
 public class ChatBot
@@ -20,10 +24,49 @@ public class ChatBot
 	private static HashMap<ChatSite,ChatIO> chatio = new HashMap<>();
 	private final EventHandler eventhandler;
 	private static Thread eventhandlerthread;
-	public ChatBot(final String login, final String password, 
-			final EventHandler event_handler, Map<String,Long[]> initialsiterooms) throws AuthenticationException
+	public ChatBot(String propfile) throws IOException{
+		this(Utils.loadProperties(propfile));
+	}
+	public ChatBot(Properties props) throws AuthenticationException{
+		eventhandler = new EventHandlerImpl();
+		HashMap<String, Long[]> relation = new HashMap<>(3);
+		for(ChatSite chatsite : ChatSite.values())
+		{
+			String site = chatsite.name();
+			String[] siterooms;
+			{
+					String s = props.getProperty(site); 
+					if(s==null){
+						s=props.getProperty(site.toLowerCase());
+						if(s==null)
+							s=props.getProperty(site.toUpperCase());
+					}
+					try{
+						siterooms=s.split(",");
+					}catch(Exception e){
+						throw new IllegalArgumentException(e);
+					}
+			}
+			Long[] rooms = new Long[siterooms.length];
+			for(int i=0;i<rooms.length;++i)
+				rooms[i] = Long.parseLong(siterooms[i]);
+			relation.put(site.toUpperCase(), rooms);
+		}
+		init(props.getProperty("LOGIN-EMAIL"),
+				props.getProperty("PASSWORD"),
+				relation
+				);
+		this.setTrigger(props.getProperty("TRIGGER"));
+	}
+	public ChatBot(final String login, final String password,
+			Map<String,Long[]> initialsiterooms) throws AuthenticationException
 	{
-		eventhandler = event_handler;
+		eventhandler = new EventHandlerImpl();
+		init(login, password, initialsiterooms);
+	}
+	private void init(final String login, final String password, 
+			Map<String,Long[]> initialsiterooms) throws AuthenticationException
+	{
 		System.out.println("Logging in...");
 		for(Entry<String, Long[]> relation : initialsiterooms.entrySet())
 		{
