@@ -11,9 +11,7 @@ class LoggingOutputStream extends PrintStream{
 		super(out);
 	}
 	@Override
-	public void println(Object x)
-	{
-		// TODO Auto-generated method stub
+	public void println(String x){
 		super.println(Utils.getDateTime()+" "+x);
 	}
 }

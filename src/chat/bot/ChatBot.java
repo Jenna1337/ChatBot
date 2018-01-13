@@ -16,7 +16,6 @@ import chat.io.ChatIO;
 import chat.io.ErrorMessages;
 import chat.users.ChatUser;
 import utils.Utils;
-import static utils.Utils.getDateTime;
 
 public class ChatBot
 {
@@ -130,7 +129,7 @@ public class ChatBot
 	public static void putMessage(ChatSite site, final long roomid, final String message)
 	{
 		if(message.trim().isEmpty()) return;
-		System.out.println(getDateTime()+" Sending message to "+site+" room "+roomid+
+		System.out.println("Sending message to "+site+" room "+roomid+
 				" with content \""+message+"\".");
 		if(!chatio.containsKey(site))
 			throw new IllegalStateException("No available IO for site \""+site+"\".");

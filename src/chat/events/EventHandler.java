@@ -79,7 +79,7 @@ public abstract class EventHandler
 	 */
 	protected boolean runCommand(final ChatEvent event)
 	{
-		System.out.println(Utils.getDateTime()+" "+event.getEventType().toString()+
+		System.out.println(event.getEventType().toString()+
 				"(message id "+event.getMessageId()+") in "+
 				event.getChatSite()+"/rooms/"+event.getRoomId()+'/'+event.getRoomName()+
 				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
