@@ -24,8 +24,7 @@ import static utils.Utils.getUnixTimeMillis;
 
 public class ChatIO
 {
-	private static final boolean secure = true;
-	private static final String protocol = secure?"https":"http";
+	private static final String protocol = "https";
 	private static final String fkeyHtmlRegex = "name=\"fkey\"\\s+(?>type=\"hidden\"\\s+)?value=\"([^\"]+)\"";
 	private static final String useridHtmlRegex = "id=\"active-user\" class=\"user-container user-(\\d+)\"";
 	private static final String replStr = "\u007F";

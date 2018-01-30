@@ -308,7 +308,7 @@ public class Utils
 		}
 		return match;
 	}
-	private static Matcher unicodematcher = Pattern.compile("\\\\u(....)").matcher("");
+	private static Matcher unicodematcher = Pattern.compile("\\\\u([A-Za-z0-9]{4})").matcher("");
 	private static String replaceUnicodeEscapes(String text)
 	{
 		unicodematcher.reset(text);

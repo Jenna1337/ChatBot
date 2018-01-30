@@ -130,7 +130,7 @@ public class ChatBot
 	{
 		if(message.trim().isEmpty()) return;
 		System.out.println("Sending message to "+site+" room "+roomid+
-				" with content \""+message+"\".");
+				" with content \""+message.replace("\n", "\\n")+"\".");
 		if(!chatio.containsKey(site))
 			throw new IllegalStateException("No available IO for site \""+site+"\".");
 		ChatIO io = chatio.get(site);

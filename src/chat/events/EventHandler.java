@@ -83,7 +83,7 @@ public abstract class EventHandler
 				"(message id "+event.getMessageId()+") in "+
 				event.getChatSite()+"/rooms/"+event.getRoomId()+'/'+event.getRoomName()+
 				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
-				") \""+event.getContent().replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")+'\"');
+				") \""+(""+event.getContent()).replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")+'\"');
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))
