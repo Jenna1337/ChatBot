@@ -13,6 +13,7 @@ import chat.bot.ChatBot;
 import chat.bot.tools.MicroAsmExamples;
 import chat.bot.tools.MicroAssembler;
 import chat.io.ErrorMessages;
+import chat.io.ErrorMessages.ErrorType;
 import utils.Utils;
 import static utils.Utils.parseLongs;
 import static utils.Utils.urlencode;
@@ -47,7 +48,7 @@ public abstract class EventHandler
 		}
 	};
 	private boolean wave(final ChatEvent event){
-		switch(event.getContent()){
+		switch(event.getContent().trim()){
 			case waveRight:
 				ChatBot.putMessage(event, waveLeft);
 				break;
@@ -80,10 +81,11 @@ public abstract class EventHandler
 	protected boolean runCommand(final ChatEvent event)
 	{
 		System.out.println(event.getEventType().toString()+
-				"(message id "+event.getMessageId()+") in "+
-				event.getChatSite()+"/rooms/"+event.getRoomId()+'/'+event.getRoomName()+
+				"(msg id "+event.getMessageId()+") in "+
+				event.getChatSite().getAbbreviation()+" room "+event.getRoomName()+
+				"(room id "+event.getRoomId()+")"+
 				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
-				") \""+(""+event.getContent()).replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")+'\"');
+				") \""+event.getEscapedContent()+'\"');
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))
@@ -321,7 +323,7 @@ public abstract class EventHandler
 		Command assembly = (ChatEvent event, String args)->{
 			String message = MicroAssembler.assemble(args);//TODO
 			if(message.isEmpty())
-				message = ErrorMessages.badInput(event);
+				message = ErrorMessages.getErrorText(event, ErrorType.BADINPUT);
 			ChatBot.replyToMessage(event, message);
 		};
 		Command learn = (ChatEvent event, String args)->{
@@ -332,7 +334,7 @@ public abstract class EventHandler
 				if(addCommand(name, text))
 					ChatBot.replyToMessage(event, "Learned command: "+name);
 				else
-					ChatBot.replyToMessage(event, ErrorMessages.cmdAlreadyExists(event));
+					ChatBot.replyToMessage(event, ErrorMessages.getErrorText(event, ErrorType.CMD_ALREADYEXISTS));
 			}
 			else{
 			}
@@ -343,9 +345,9 @@ public abstract class EventHandler
 			else
 			{
 				if(builtincommands.containsKey(args))
-					ChatBot.replyToMessage(event, ErrorMessages.cannotForgetCmd(event));
+					ChatBot.replyToMessage(event, ErrorMessages.getErrorText(event, ErrorType.CMD_UNFORGETABLE));
 				else
-					ChatBot.replyToMessage(event, ErrorMessages.commandNotFound(event));
+					ChatBot.replyToMessage(event, ErrorMessages.getErrorText(event, ErrorType.CMD_NOTFOUND));
 			}
 		};
 		Command joinroom = (ChatEvent event, String args)->{

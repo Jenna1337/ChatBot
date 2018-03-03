@@ -14,6 +14,7 @@ import chat.events.EventHandler;
 import chat.events.EventHandlerImpl;
 import chat.io.ChatIO;
 import chat.io.ErrorMessages;
+import chat.io.ErrorMessages.ErrorType;
 import chat.users.ChatUser;
 import utils.Utils;
 
@@ -141,7 +142,7 @@ public class ChatBot
 	}
 	public static void putMessage(final ChatEvent event, final String message){
 		if(message.trim().isEmpty()){
-			putMessage(event, ErrorMessages.generic(event));
+			putMessage(event, ErrorMessages.getErrorText(event, ErrorType.GENERIC));
 			return;
 		}
 		putMessage(event.getChatSite(), event.getRoomId(), message);

@@ -29,8 +29,9 @@ public class Utils
 	public static boolean isdebuggerrunning(){
 		return debuggerRunning;
 	}
-	
-	public static String eval(String query)
+	private static volatile int evalRecalcCount = 0;
+	private static final int evalRecalcCountMax = 1;
+	public static synchronized String eval(String query)
 	{
 		query = query.trim();
 		if(query.equalsIgnoreCase("alive"))
@@ -79,12 +80,20 @@ public class Utils
 		}
 		catch(ScriptException | NullPointerException e)
 		{
-			if(response!=null)
+			String respo = null;
+			if(response!=null && evalRecalcCount<=evalRecalcCountMax)
 			{
-				System.err.println("Failed to parse JSON:\n"+response);
+				evalRecalcCount++;
+				try{
+					respo = parseResponse(GET(getStringValueJSON("recalculate", response)));
+				}
+				catch(Exception e2){
+					System.err.println("Failed to parse JSON:\n"+response);
+				}
+				evalRecalcCount--;
 			}
 			e.printStackTrace();
-			return "Failed to parse response";
+			return (respo!=null && respo.length()>0) ? respo : "Failed to parse response";
 		}
 	}
 	
@@ -335,7 +344,7 @@ public class Utils
 		Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 		return text;
 	}
-	private static String replaceAllAll(String target, String[][] rr)
+	public static String replaceAllAll(String target, String[][] rr)
 	{
 		for(String[] r : rr)
 			target=target.replaceAll(r[0], r[1]);

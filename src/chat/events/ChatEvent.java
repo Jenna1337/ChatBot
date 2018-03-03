@@ -8,6 +8,7 @@ import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
 import static utils.Utils.makeFixedWidth;
 import static utils.Utils.makeLinksMarkdown;
+import static utils.Utils.replaceAllAll;
 import static utils.Utils.search;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
@@ -23,7 +24,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	/**The id of the message affected.*/
 	private final long message_id;
 	/**The content of the event.*/
-	private String content;
+	private final String content;
 	/**The room id in which this event took place.*/
 	private final long room_id;
 	/**The room name in which this event took place.*/
@@ -64,20 +65,34 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		user_name = unescapeHtml(getStringValueJSON("user_name", raweventjson));
 		parent_id = getNumValueJSON("parent_id", raweventjson);
 		target_user_id = getNumValueJSON("target_user_id", raweventjson);
-		content = unescapeHtml(getStringValueJSON("content", raweventjson));
-		/*
-		 * Note: the value of the JSON "content" may not be the entire message.
-		 */
-		switch(event_type){
-			case MessagePosted:
-			case MessageEdited:
-			case UserMentioned:
-			case MessageReply:
-				if(content!=null && content.startsWith("<div class='partial'>"))
-				content = unescapeHtml(getRawMessageContentNoException(message_id));
-				break;
-			default:
+		
+		String plaincontent = null;
+		try{
+			plaincontent = GET("https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id+"?plain=true");
 		}
+		catch(Exception e1){
+			String rawcontent = "";
+			try{
+				rawcontent = unescapeHtml(getStringValueJSON("content", raweventjson));
+			}catch(Exception e3){
+				System.err.println("Full Erroring text:\n"+raweventjson);
+			}
+			/*
+			 * Note: the value of the JSON "content" may not be the entire message.
+			 */
+			try{
+				plaincontent = unmarkdown(rawcontent, chatsite);
+			}
+			catch(Exception e2){
+				plaincontent = rawcontent;
+			}
+		}
+		content = plaincontent;
+		
+		//System.out.println("Received event: "+raweventjson);
+	}
+	@Deprecated
+	private static String unmarkdown(String content, ChatSite chatsite){
 		if(content.contains("class=\"ob-post-tag\""))
 		{
 			content = content.replaceAll(regex_tag, "[tag:$3]");
@@ -108,7 +123,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		content = content.trim();
 		if(content.startsWith(divStart) && content.endsWith(divEnd))
 			content = content.substring(divStart.length(), content.length()-divEnd.length());
-		//System.out.println("Received event: "+raweventjson);
+		return content;
 	}
 	
 	/**
@@ -165,21 +180,14 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		long t2=o.getTimeStamp();
 		return t1>t2?1:(t1<t2?-1:0);
 	}
-
-	private String getRawMessageContentNoException(final long message_id)
+	private static final String[][] escapees = {
+			{"\\\\","\\\\\\\\"},
+			{"\r","\\\\r"},
+			{"\n","\\\\n"},
+			{"\"","\\\\\""},
+	};
+	public String getEscapedContent()
 	{
-		String url ="https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id;
-		try
-		{
-			if(message_id==0)
-				return null;
-			return GET(url);
-		}
-		catch(Exception e)
-		{
-			System.err.println("Failed to read message id "+message_id);
-			System.err.println(url);
-			return null;
-		}
+		return replaceAllAll(this.getContent(), escapees);
 	}
 }
