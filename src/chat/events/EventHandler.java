@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import chat.ChatSite;
 import chat.bot.ChatBot;
 import chat.bot.tools.MicroAsmExamples;
@@ -26,6 +28,7 @@ public abstract class EventHandler
 	{
 		public abstract void run(ChatEvent event, String args);
 	}
+	private static final int MIN_MENTION_LENGTH = 3;
 	private static final long MAX_COMMAND_TIME = 30000;// 30 seconds
 	private static final long WAVE_TIMER_SLEEP = 60000*5;// 60 seconds *5
 	private static final String waveRight = "o/", waveLeft = "\\o";
@@ -71,7 +74,7 @@ public abstract class EventHandler
 	public abstract void handle(final ChatEvent event);
 	private static volatile int threadNumber = 1;
 	private static final java.util.function.Supplier<String> myPingable=()->{ 
-		return "@"+ChatBot.getMyUserName().replaceAll("\\s+","");
+		return "@"+ChatBot.getMyUserName().replaceAll("\\s","");
 	};
 	/**
 	 * Runs a command associated with the chat event, if any.
@@ -90,32 +93,11 @@ public abstract class EventHandler
 			return false;
 		if(!justWaved && wave(event))
 			return true;
-		String content = event.getContent().trim();
-		String myName = myPingable.get();
+		String content = getSterilizedContent(event);
 		switch(event.getEventType()){
-			case UserMentioned:
 			case MessageReply:
-				if(content.contains(myName)){
-					try{
-						if(content.replace("\\s*"+myName+"\\s*", "").trim().isEmpty())
-							throw new IndexOutOfBoundsException();
-						if(content.startsWith(trigger)){
-							content = content.replace(myName, "").trim();
-							break;
-						}
-					}
-					catch(IndexOutOfBoundsException aioobe){
-						//it's an empty mention
-						//TODO reply with "help"?
-						ChatBot.replyToMessage(event, '@'+event.getUserName());
-						return false;
-					}
-				}
-				else
-				{
-					//it's a direct reply with a onebox
-					return true;
-				}
+				break;
+			case UserMentioned:
 				break;
 			case MessagePosted:
 			case MessageEdited:
@@ -205,6 +187,36 @@ public abstract class EventHandler
 		}, MAX_COMMAND_TIME);
 		thread.start();
 		return true;
+	}
+	private static Pattern regex_message_reply = Pattern.compile("^:\\d+ "),
+			regex_mention = Pattern.compile("@((?:[^\\s!?();:,\\/+&<]){"
+					+ MIN_MENTION_LENGTH + "3,})");
+	
+	private String getSterilizedContent(ChatEvent event)
+	{
+		String content = event.getContent().trim();
+		String myName = myPingable.get();
+		//TODO Remove instances of (text that could ping myName) from (content)
+		Matcher m = regex_message_reply.matcher(content);
+		switch(event.getEventType()){
+			case MessageEdited:
+				break;
+			case MessageMovedIn:
+				break;
+			case MessageMovedOut:
+				break;
+			case MessagePosted:
+				break;
+			case MessageReply:
+				content = m.replaceFirst("");
+				break;
+			case UserMentioned:
+				break;
+			default:
+				break;
+		}
+		// TODO Auto-generated method stub
+		return content;
 	}
 	public final void setTrigger(String trigger)
 	{
@@ -451,20 +463,20 @@ public abstract class EventHandler
 			String cmdname = urldecode_cmd(f.getName().endsWith(cmdfileext) ? 
 					f.getName().substring(0, f.getName().length() - cmdfileext.length())
 					: f.getName());
-					System.out.println("Loading command: "+cmdname);
-					try
-					{
-						String text = "";
-						FileReader reader = new FileReader(f);
-						int ch;
-						while((ch=reader.read())!=-1)
-							text+=(char)ch;
-						reader.close();
-						putCommand(cmdname, text);
-					}
-					catch(IOException e){
-						new InternalError("Failed to load command: "+cmdname, e).printStackTrace();
-					}
+			System.out.println("Loading command: "+cmdname);
+			try
+			{
+				String text = "";
+				FileReader reader = new FileReader(f);
+				int ch;
+				while((ch=reader.read())!=-1)
+					text+=(char)ch;
+				reader.close();
+				putCommand(cmdname, text);
+			}
+			catch(IOException e){
+				new InternalError("Failed to load command: "+cmdname, e).printStackTrace();
+			}
 		}
 		System.out.println("Done loading commands...");
 	}

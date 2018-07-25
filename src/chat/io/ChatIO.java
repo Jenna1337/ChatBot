@@ -150,7 +150,7 @@ public class ChatIO
 		{
 			throw new AuthenticationException("Failed to login", e);
 		}
-		System.out.println("Successfully logged in to"+site.getUrl());// Success
+		System.out.println("Successfully logged in to "+site.getUrl());// Success
 		logged_in=true;
 	}
 	private synchronized void logout() throws AuthenticationException

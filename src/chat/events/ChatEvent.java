@@ -1,17 +1,14 @@
 package chat.events;
 
 import chat.ChatSite;
-import chat.io.ChatIO;
 import utils.json.JsonObject;
-import static utils.Utils.containsRegex;
 import static utils.Utils.getNumValueJSON;
 import static utils.Utils.getStringValueJSON;
-import static utils.Utils.makeFixedWidth;
-import static utils.Utils.makeLinksMarkdown;
 import static utils.Utils.replaceAllAll;
-import static utils.Utils.search;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ChatEvent extends JsonObject<ChatEvent>
 {
@@ -42,15 +39,6 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	/**The corresponding chat site.*/
 	private final ChatSite CHATSITE;
 	
-	private static final String divStart = "<div class='full'>",
-			divEnd = "</div>";
-	
-	private static final String regex_tag="\\<(\\w+)[^\\>]*?\\>\\<(\\w+).*?class=\"ob-post-tag[^\\>]*?\\>(.*?)\\<\\/\\2\\>\\<\\/\\1\\>";
-	private static final String regex_onebox="class=\"(?>onebox|room-mini|ob-)";
-	private static final String regex_href="href=\"([^\"]+)";
-	private static final String regex_pre="(?s)<pre[^>]*>(.*?)<\\/pre>";
-	
-	
 	public ChatEvent(final String raweventjson, final ChatSite chatsite)
 	{
 		CHATSITE = chatsite;
@@ -71,59 +59,17 @@ public class ChatEvent extends JsonObject<ChatEvent>
 			plaincontent = GET("https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id+"?plain=true");
 		}
 		catch(Exception e1){
-			String rawcontent = "";
 			try{
-				rawcontent = unescapeHtml(getStringValueJSON("content", raweventjson));
+				plaincontent = unescapeHtml(getStringValueJSON("content", raweventjson));
 			}catch(Exception e3){
 				System.err.println("Full Erroring text:\n"+raweventjson);
-			}
-			/*
-			 * Note: the value of the JSON "content" may not be the entire message.
-			 */
-			try{
-				plaincontent = unmarkdown(rawcontent, chatsite);
-			}
-			catch(Exception e2){
-				plaincontent = rawcontent;
+				plaincontent="";
 			}
 		}
+		
 		content = plaincontent;
 		
 		//System.out.println("Received event: "+raweventjson);
-	}
-	@Deprecated
-	private static String unmarkdown(String content, ChatSite chatsite){
-		if(content.contains("class=\"ob-post-tag\""))
-		{
-			content = content.replaceAll(regex_tag, "[tag:$3]");
-		}
-		if(containsRegex(regex_onebox, content)){
-			content=search(regex_href, content);
-			if(!content.startsWith("http"))
-			{
-				if(content.startsWith("//"))
-					content = ChatIO.getProtocol() + content;
-				else
-				{
-					if(content.charAt(0)!='/')
-						content = '/' + content;
-					content = ChatIO.getProtocol() + "://" + chatsite.getUrl() + content;
-				}
-			}
-		}
-		else//not a onebox
-		{
-			if(content.startsWith("<pre"))
-			{
-				content = makeFixedWidth(search(regex_pre, content));
-			}
-			else
-				content=makeLinksMarkdown(content, chatsite.getUrl());
-		}
-		content = content.trim();
-		if(content.startsWith(divStart) && content.endsWith(divEnd))
-			content = content.substring(divStart.length(), content.length()-divEnd.length());
-		return content;
 	}
 	
 	/**
