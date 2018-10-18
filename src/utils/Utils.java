@@ -13,7 +13,9 @@ import java.util.Properties;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.script.ScriptContext;
 import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 import chat.bot.ChatBot;
 import chat.io.ChatIO;
 import static utils.WebRequest.GET;
@@ -97,6 +99,11 @@ public class Utils
 		}
 	}
 	
+	private static final SimpleBindings bindings = new SimpleBindings();
+	static{
+		
+	}
+	
 	private static String parseResponse(String response) throws ScriptException, NullPointerException
 	{
 		if(response.matches("\\s*"))
@@ -111,21 +118,18 @@ public class Utils
 				"var httpsregex = /[^\\/]+\\/\\/.*/g;\n" + 
 				"var htsec = \"https:\";\n" + 
 				"var subst = \"&=.$1\";\n" + 
-				"var pods="+response+".queryresult.pods;\n" + 
+				"var results="+response+".queryresult;\n"+
+				"var pods=results.pods;\n" + 
 				"var output;\n" + 
-				"for(var i=0;i<pods.length;++i)\n" + 
-				"{\n" + 
-				"	if(!(/^.*\\b[Ii]nput\\b.*$/gim).test(pods[i].title))\n" + 
-				"	{\n" + 
-				"		var src = pods[i].subpods[0].img.src;\n" + 
-				"		if(pods[i].subpods[0].plaintext!=\"\")\n" + 
-				"		{\n" + 
-				"			output = pods[i].subpods[0].plaintext.replace('Wolfram|Alpha','"
+				"for(var i=0;i<pods.length;++i){\n" +
+				"	if(!(/^.*\\b[Ii]nput\\b.*$/gim).test(pods[i].title)){\n" + 
+				"		var sbpd=pods[i].subpods[0];\n"+
+				"		var src = sbpd.img.src;\n" + 
+				"		if(sbpd.plaintext!=\"\"){\n" + 
+				"			output = sbpd.plaintext.replace('Wolfram|Alpha','"
 				+ChatBot.getMyUserName().replace("'", "\\'")+"').replace('Stephen Wolfram and his team', '"
 				+"somebody".replace("'", "\\'")+"me');\n" + 
-				"		}\n" + 
-				"		else\n" + 
-				"		{\n" + 
+				"		}else{\n" + 
 				"			var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);\n" + 
 				"			output = (msg.match(httpsregex) ? msg : htsec+msg);\n" + 
 				"		}\n" +
@@ -133,18 +137,42 @@ public class Utils
 				"	}\n" + 
 				"}\n" + 
 				"output";
+		String jscmd2 = "var assum = results.assumptions;\n" + 
+				"var output;\n" + 
+				"if(assum){\n" + 
+				"	var f = (function(assum,frst){\n" + 
+				"	output='Assuming '+((frst&&assum.word)?('\"'+assum.word+'\" is a '+assum.values[0].desc):assum.values[0].desc)+'. Can also be ';\n" + 
+				"	var last=assum.values[assum.values.length-1];\n" + 
+				"	if(assum.values.length==2){\n" + 
+				"		output+=last.desc;\n" + 
+				"	}else{\n" + 
+				"		for(var i=1;i<assum.values.length-1;++i){\n" + 
+				"			var v = assum.values[i];\n" + 
+				"			output+=v.desc+', ';\n" + 
+				"		}\n" + 
+				"		output+='or '+last.desc;\n" + 
+				"	}\n" + 
+				"	return output;\n" + 
+				"	});\n" + 
+				"	var outputmain;\n" + 
+				"	if(assum[0]){\n" + 
+				"		outputmain='';\n" + 
+				"		outputmain+=f(assum[0],true)+'\\n';\n" + 
+				"		for(var i=1;i<assum.length;++i)\n" + 
+				"			outputmain+=f(assum[i],false)+'\\n';\n" + 
+				"	}else\n" + 
+				"		outputmain=f(assum)+'\\n';\n" + 
+				"	outputmain=outputmain.substring(0,outputmain.length-1);\n" + 
+				"	output=outputmain\n" + 
+				"}\n" + 
+				"output";
 		javax.script.ScriptEngine engine = new javax.script.ScriptEngineManager().getEngineByName("js");
+		engine.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
 		Object r = engine.eval(jscmd);
-		String rawjson = (r==null ? "" : r.toString());
-		String result = rawjson;//getStringValueJSON("plaintext", rawjson);
-		/*if(result.isEmpty())
-		{
-			result = getStringValueJSON("src", rawjson);
-			if(result.startsWith("//"))
-				result = "https:"+result;
-		}
-		else
-			result = result.replaceAll("\\\\n", "\n").replace("Wolfram|Alpha", ChatBot.getMyUserName()).replaceAll("Stephen Wolfram and his team", "somebody");*/
+		String result = (r==null ? "" : r.toString());
+		Object a = engine.eval(jscmd2);
+		String assumptions = (a==null ? "" : a.toString());
+		System.out.println(assumptions);
 		return result;
 	}
 	
@@ -313,6 +341,8 @@ public class Utils
 			}
 		}catch(Exception e){
 			System.err.println("Partial: "+match);
+			System.err.println("While looking for \""+parname+"\"");
+			System.err.println("Full text: %%STX%%"+rawjson+"%%ETX%%\n");
 			e.printStackTrace();
 		}
 		return match;
@@ -435,8 +465,15 @@ public class Utils
 	public static long getUnixTimeMillis(){
 		return System.currentTimeMillis();
 	}
-	private static final String wotdFeedUrl = "http://www.dictionary.com/wordoftheday/wotd.rss";
-	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<link>(.*?)<\\/link>.*?<description>(.*?)<\\/description>.*?<\\/item>",
+	/*
+	 * Old feed: http://www.dictionary.com/wordoftheday/wotd.rss
+	 * 
+	 * Potential replacement feeds:
+	 * http://www.oed.com/rss/wordoftheday
+	 * http://feeds.urbandictionary.com/UrbanWordOfTheDay
+	 */
+	private static final String wotdFeedUrl = "http://www.oed.com/rss/wordoftheday";
+	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<title>(?<title>.*?)<\\/title>.*?<link>(?<link>.*?)<\\/link>.*?<description>(?<description>.*?)<\\/description>.*?<\\/item>",
 			Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher("");
 	public static String getWotd(){
 		try
@@ -444,7 +481,10 @@ public class Utils
 			String text = GET(wotdFeedUrl);
 			wotdMatcher.reset(text);
 			wotdMatcher.find();
-			String output = "Today's Word of the Day is ["+wotdMatcher.group(2)+"]("+wotdMatcher.group(1)+")";
+			String output = "Today's Word of the Day is ["
+					+ wotdMatcher.group("title") + "]("
+					+ wotdMatcher.group("link") + "). \""
+					+ wotdMatcher.group("description")+"\"";
 			return output;
 		}
 		catch(IOException e)

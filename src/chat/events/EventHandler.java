@@ -42,6 +42,10 @@ public abstract class EventHandler
 	private Map<String, Command> builtincommands = new TreeMap<>();
 	private String trigger;
 	private volatile boolean justWaved = false;
+	private static final String regex_emoji_fitz = "(?:\uD83C[\uDFFB-\uDFFF])?";
+	private static final String wave_emoji_plain = "\uD83D\uDC4B";
+	private static final String regex_wave_emoji = wave_emoji_plain + regex_emoji_fitz;
+	
 	private Runnable waveTimer = ()->{
 		try{
 			Thread.sleep(WAVE_TIMER_SLEEP);
@@ -51,7 +55,8 @@ public abstract class EventHandler
 		}
 	};
 	private boolean wave(final ChatEvent event){
-		switch(event.getContent().trim()){
+		String content = event.getContent().trim();
+		switch(content){
 			case waveRight:
 				ChatBot.putMessage(event, waveLeft);
 				break;
@@ -59,6 +64,10 @@ public abstract class EventHandler
 				ChatBot.putMessage(event, waveRight);
 				break;
 			default:
+				if(content.matches(regex_wave_emoji)){
+					ChatBot.putMessage(event, wave_emoji_plain);
+					break;
+				}
 				return false;
 		}
 		justWaved=true;
