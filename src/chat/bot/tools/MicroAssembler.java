@@ -422,10 +422,6 @@ public final class MicroAssembler{
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		output = output.replace(""+rvalchsub, ""+rvalch);
-		String retval = output;
-		output="";
-		System.out.println("Returning string: "+retval);
-		return retval;
+		return output.replace(""+rvalchsub, ""+rvalch);
 	}
 }

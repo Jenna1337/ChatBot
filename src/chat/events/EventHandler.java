@@ -92,12 +92,13 @@ public abstract class EventHandler
 	 */
 	protected boolean runCommand(final ChatEvent event)
 	{
-		System.out.println(event.getEventType().toString()+
-				"(msg id "+event.getMessageId()+") in "+
-				event.getChatSite().getAbbreviation()+" room "+event.getRoomName()+
-				"(room id "+event.getRoomId()+")"+
-				" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
-				") \""+event.getEscapedContent()+'\"');
+		if(DEBUG)
+			System.out.println(event.getEventType().toString()+
+					"(msg id "+event.getMessageId()+") in "+
+					event.getChatSite().getAbbreviation()+" room "+event.getRoomName()+
+					"(room id "+event.getRoomId()+")"+
+					" by user \""+event.getUserName()+"\" (id "+event.getUserId()+
+					") \""+event.getEscapedContent()+'\"');
 		if(event.getContent()==null)
 			return false;
 		if(!justWaved && wave(event))

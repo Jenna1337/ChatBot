@@ -103,13 +103,15 @@ public class EventHandlerImpl extends EventHandler
 			case UserSuspended://29
 				System.out.println("Handling event "+event.toString());
 				break;
-			default:
-				break;
 			case UserMerged://30
 				System.out.println("Handling event "+event.toString());
 				break;
 			case UserNameOrAvatarChanged://34
 				System.out.println("Handling event "+event.toString());
+				break;
+			default:
+				System.out.println("Handling event "+event.toString());
+				System.err.println("Unknown event type" + event.toString());
 				break;
 		}
 	}
