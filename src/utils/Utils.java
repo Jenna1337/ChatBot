@@ -466,14 +466,29 @@ public class Utils
 		return System.currentTimeMillis();
 	}
 	/*
-	 * Old feed: http://www.dictionary.com/wordoftheday/wotd.rss
+	 * Defunct:
+	 *   http://www.dictionary.com/wordoftheday/wotd.rss
 	 * 
-	 * Potential replacement feeds:
-	 * http://www.oed.com/rss/wordoftheday
-	 * http://feeds.urbandictionary.com/UrbanWordOfTheDay
+	 * TODO add the ability for the user to choose which feed they want
+	 * Viable:
+	 *   http://www.oed.com/rss/wordoftheday
+	 *   https://wordsmith.org/awad/rss1.xml
+	 *   http://www.wordthink.com/feed/
+	 *   https://www.netlingo.com/feed-wotd.rss
+	 *   http://www.macmillandictionaryblog.com/feed
+	 *   https://www.investopedia.com/feedbuilder/feed/getfeed/?feedName=rss_tod
+	 *   http://feeds.urbandictionary.com/UrbanWordOfTheDay
+	 * 
+	 * Abnormal:
+	 *   https://daily.wordreference.com/feed/
+	 * 
+	 * TODO check if this has been fixed yet.
+	 * Words and definitions swapped as of October 29, 2018:
+	 *   https://feeds.feedburner.com/TodaysComputerWordOfTheDay?format=xml
+	 *   https://www.computerhope.com/rss/wotd.rss
 	 */
 	private static final String wotdFeedUrl = "http://www.oed.com/rss/wordoftheday";
-	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<title>(?<title>.*?)<\\/title>.*?<link>(?<link>.*?)<\\/link>.*?<description>(?<description>.*?)<\\/description>.*?<\\/item>",
+	private static final Matcher wotdMatcher = Pattern.compile("(?is)<item>.*?<title>(?<title>.*?)<\\/title>(?:.*?(?:<link>(?<link>.*?)<\\/link>|<description>(?<description>.*?)<\\/description>)){2}.*?<\\/item>",
 			Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher("");
 	public static String getWotd(){
 		try
