@@ -296,6 +296,29 @@ public class ChatIO
 					lastMessageId+".", e);
 		}
 	}
+	/**
+	 * This should only be used to help control an off-topic discussion.
+	 * @param roomid - The id of the room to be put in timeout.
+	 * @param duration - The duration, in seconds, the room will be in timeout.
+	 * @param reason - Explanation as to why the room is in timeout.
+	 */
+	public void roomTimeout(final long roomid, final long duration, final String reason)
+	{
+		try
+		{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/rooms/timeout/"+roomid, urlencode(new String[][]{
+				{"fkey", fkey},
+				{"duration", ""+duration},
+				{"reason", reason}
+			}));
+			
+		}
+		catch(Exception e)
+		{
+			throw new IllegalArgumentException("Failed to set timeput for room id "+
+					roomid+".", e);
+		}
+	}
 	public boolean isLoggedIn()
 	{
 		synchronized(lock_logged_in){
