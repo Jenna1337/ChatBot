@@ -128,7 +128,7 @@ public class Utils
 				"		if(sbpd.plaintext!=\"\"){\n" + 
 				"			output = sbpd.plaintext.replace('Wolfram|Alpha','"
 				+ChatBot.getMyUserName().replace("'", "\\'")+"').replace('Stephen Wolfram and his team', '"
-				+"somebody".replace("'", "\\'")+"me');\n" + 
+				+"somebody".replace("'", "\\'")+"');\n" + 
 				"		}else{\n" + 
 				"			var msg = (src.match(regex) ? src.replace(regex, src+subst) : src);\n" + 
 				"			output = (msg.match(httpsregex) ? msg : htsec+msg);\n" + 
