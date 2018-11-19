@@ -27,6 +27,7 @@ public class WebSocket extends Socket
 						if((line=dataReader.readLine())==null)
 							break;
 					}
+					//TODO add an actual data handler
 					System.out.println(line);
 				}
 			}
