@@ -24,6 +24,7 @@ public class WebRequest
 		final CookieManager cook = new CookieManager();
 		cook.setCookiePolicy(java.net.CookiePolicy.ACCEPT_ALL);
 		CookieHandler.setDefault(cook);
+		HttpURLConnection.setFollowRedirects(true);
 	}
 	private static String[][] headers = new String[0][0];
 	private static Charset chset = java.nio.charset.StandardCharsets.UTF_8;

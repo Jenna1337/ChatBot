@@ -20,7 +20,6 @@ import static utils.Utils.search;
 import static utils.Utils.urlencode;
 import static utils.WebRequest.GET;
 import static utils.WebRequest.POST;
-import static utils.Utils.getUnixTimeMillis;
 
 public class ChatIO
 {
@@ -89,67 +88,81 @@ public class ChatIO
 		this.initialRooms = new TreeSet<Long>(Arrays.asList(longs));
 		joinRoom(longs);
 	}
+	private static volatile boolean loggedin = false;
 	private synchronized void login(final ChatSite site, final String email, final String password) throws AuthenticationException
 	{
-		try
-		{
-			synchronized(lock_logged_in){
-				String response_text;
-				String fkey;
-				switch(site){
-					case STACKOVERFLOW:
-						response_text = GET("https://stackoverflow.com/users/login");
-						fkey = search(fkeyHtmlRegex, response_text);
-						String post_data = urlencode(new String[][]{
-							{"email", email},
-							{"fkey", fkey},
-							{"oauth_server", ""},
-							{"oauth_version", ""},
-							{"openid_identifier", ""},
-							{"openid_username", ""},
-							{"password", password},
-							{"ssrc", "head"},
-						});
-						response_text = POST("https://stackoverflow.com/users/login", post_data);
-						break;
-					case STACKEXCHANGE:
-						response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
-							{"from", "https://stackexchange.com/users/login#log-in"}
-						}));
-						response_text = GET(response_text);
-						fkey = search(fkeyHtmlRegex,response_text);
-						response_text = POST("https://openid.stackexchange.com/affiliate/form/login/submit", urlencode(new String[][]{
-							{"email", email},
-							{"password", password},
-							{"affId", "11"},
-							{"fkey", fkey},
-						}));
-						GET(search("var target = \'([^\']+)", response_text));
-						break;
-					case METASTACKEXCHANGE:
-						response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
-							{"from", "https://meta.stackexchange.com/users/login#log-in"},
-							{"_", Long.toString(getUnixTimeMillis())}
-						}));
-						response_text = GET(response_text);
-						fkey = search(fkeyHtmlRegex,response_text);
-						response_text = POST("https://openid.stackexchange.com/affiliate/form/login/submit", urlencode(new String[][]{
-							{"email", email},
-							{"password", password},
-							{"affId", "11"},
-							{"fkey", fkey},
-						}));
-						GET(search("var target = \'([^\']+)", response_text));
-						break;
-					default:
-						break;
+		if(!loggedin)
+			loop:
+				while(true){
+					try{
+						synchronized(lock_logged_in){
+							String response_text;
+							String fkey;
+							switch(site){
+								case STACKOVERFLOW:
+									response_text = GET("https://stackoverflow.com/users/login");
+									fkey = search(fkeyHtmlRegex, response_text);
+									String post_data = urlencode(new String[][]{
+										{"email", email},
+										{"fkey", fkey},
+										{"oauth_server", ""},
+										{"oauth_version", ""},
+										{"openid_identifier", ""},
+										{"openid_username", ""},
+										{"password", password},
+										{"ssrc", "head"},
+									});
+									response_text = POST("https://stackoverflow.com/users/login", post_data);
+									GET("https://"+site.getUrl());
+									break loop;
+								case STACKEXCHANGE:
+									response_text = GET("https://stackexchange.com/users/login");
+									//response_text = GET(response_text);
+									fkey = search(fkeyHtmlRegex,response_text);
+									response_text = POST("https://meta.stackexchange.com/users/login?returnurl=https%3a%2f%2fstackexchange.com%2fusers%2flogin-or-signup%2fdelegated%3freturnurl%3dhttp%253a%252f%252fchat.stackexchange.com", urlencode(new String[][]{
+										{"cdl","1"},
+										{"email", email},
+										{"password", password},
+										{"fkey", fkey},
+									}));
+									//GET(search("var target = \'([^\']+)", response_text));
+									break loop;
+								case METASTACKEXCHANGE:/*
+							response_text = POST("https://stackexchange.com/users/signin", urlencode(new String[][]{
+								{"from", "https://meta.stackexchange.com/users/login#log-in"},
+								{"_", Long.toString(getUnixTimeMillis())}
+							}));
+							response_text = GET(response_text);
+							fkey = search(fkeyHtmlRegex,response_text);
+							response_text = POST("https://meta.stackexchange.com/users/login", urlencode(new String[][]{
+								{"email", email},
+								{"password", password},
+								{"affId", "11"},
+								{"fkey", fkey},
+							}));
+							GET(search("var target = \'([^\']+)", response_text));*/
+									GET("https://"+site.getUrl());
+									break loop;
+								default:
+									throw new UnsupportedOperationException("Site \""+site.name()+"\" does not have login handling.");
+							}
+						}
+					}
+					catch(java.net.SocketTimeoutException e){
+						try
+						{
+							Thread.sleep(5000);
+						}
+						catch(InterruptedException e1)
+						{
+							e1.printStackTrace();
+						}
+						continue loop;
+					}
+					catch(Exception e){
+						throw new AuthenticationException("Failed to login", e);
+					}
 				}
-			}
-		}
-		catch(Exception e)
-		{
-			throw new AuthenticationException("Failed to login", e);
-		}
 		System.out.println("Successfully logged in to "+site.getUrl());// Success
 		logged_in=true;
 	}
