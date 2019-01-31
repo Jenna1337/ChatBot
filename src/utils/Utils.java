@@ -3,7 +3,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -48,7 +47,7 @@ public class Utils
 			final String proxycode = getStringValueJSON("code", 
 					GET("https://www.wolframalpha.com/input/api/v1/code?"
 							+System.currentTimeMillis()*1000));
-			HttpURLConnection connection = WebRequest.request(new URL(""
+			return parseResponse(response=WebRequest.GET(new URL(""
 					+"https://www.wolframalpha.com/input/json.jsp"
 					+"?async=false"
 					+"&banners=raw"
@@ -62,13 +61,12 @@ public class Utils
 					+"&scantimeout=1"
 					+"&sponsorcategories=false"
 					+"&statemethod=deploybutton"
-					+"&storesubpodexprs=true"));
-			connection.setRequestProperty("Host", "https://www.wolframalpha.com");
-			connection.setRequestProperty("Origin", "https://www.wolframalpha.com");
-			connection.setRequestProperty("Referer", inputurl);
-			connection.setRequestMethod("GET");
-			response = WebRequest.read(connection);
-			return parseResponse(response);
+					+"&storesubpodexprs=true"),
+					new String[][]{
+				{"Host", "https://www.wolframalpha.com"},
+				{"Origin", "https://www.wolframalpha.com"},
+				{"Referer", inputurl}
+			}));
 		}
 		catch(ConnectException e)
 		{
@@ -87,7 +85,7 @@ public class Utils
 			{
 				evalRecalcCount++;
 				try{
-					respo = parseResponse(GET(getStringValueJSON("recalculate", response)));
+					respo = parseResponse(response=GET(getStringValueJSON("recalculate", response)));
 				}
 				catch(Exception e2){
 					System.err.println("Failed to parse JSON:\n"+response);

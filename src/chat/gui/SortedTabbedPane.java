@@ -7,7 +7,7 @@ import javax.swing.JTabbedPane;
 public class SortedTabbedPane extends JTabbedPane
 {
 	@Override
-	public void insertTab(String title, Icon icon, Component component, String tip, int unused)
+	public void insertTab(String title, Icon icon, Component component, String tip, @SuppressWarnings("unused") int unused)
 	{
 		int low = 0;
 		int high = this.getTabCount() - 1;

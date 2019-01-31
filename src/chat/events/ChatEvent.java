@@ -7,8 +7,6 @@ import static utils.Utils.getStringValueJSON;
 import static utils.Utils.replaceAllAll;
 import static utils.Utils.unescapeHtml;
 import static utils.WebRequest.GET;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ChatEvent extends JsonObject<ChatEvent>
 {

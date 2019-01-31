@@ -44,7 +44,7 @@ class LoggingOutputStream extends PrintStream{
 
 public class Main
 {
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "resource"})
 	public static void main(String[] args) throws Exception
 	{
 		System.setOut(new LoggingOutputStream(System.out));

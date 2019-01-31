@@ -246,6 +246,7 @@ public class ChatIO
 	}
 	public void putMessage(final long roomid, final String message)
 	{
+		if(CHATSITE==ChatSite.METASTACKEXCHANGE && roomid!=1153) return;
 		if(message.trim().isEmpty()) return;
 		try
 		{
