@@ -78,9 +78,10 @@ public class EventHandlerImpl extends EventHandler
 			case UserNotification://16
 				System.out.println("Handling event "+event.toString());
 				try{
-					POST("https://chat.stackoverflow.com/messages/ack", urlencode(new String[][]{
+					//TODO acknowledge notification 
+					/*POST("https://chat.stackoverflow.com/messages/ack", urlencode(new String[][]{
 						{"id", ""+event.getMessageId()}
-					}));
+					}));*/
 				}catch(Exception e){
 					e.printStackTrace();
 				}
