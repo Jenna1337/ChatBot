@@ -8,14 +8,13 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.security.sasl.AuthenticationException;
 import chat.ChatSite;
 import chat.events.ChatEventList;
 import chat.users.ChatUser;
 import chat.users.ChatUserList;
 import utils.WebRequest;
+import utils.js.JavaScriptArray;
 import static utils.Utils.search;
 import static utils.Utils.urlencode;
 import static utils.WebRequest.GET;
@@ -215,13 +214,19 @@ public class ChatIO
 				LinkedList<String> eventlists = new LinkedList<String>();
 				try
 				{
-					Pattern p = Pattern.compile("\"e\"\\:\\[(([^\\]]+]*?)+)(?=],)");
-					Matcher m = p.matcher(response);
-					while(m.find())
+					String jsf = "var a=" + response + ";var list=[];for(var i in a){"
+							+ " var b=a[i].e;"
+							+ " if(b)"
+							+ "  for(var j in b)"
+							+ "   list.push(JSON.stringify(b[j]))"
+							+ "}"
+							+ "return list;";
+					String[] result = JavaScriptArray.fromResult(jsf).to(String[].class);
+					
+					for(String event : result)
 					{
-						String match = m.group(1);
-						if(!eventlists.contains(match))
-							eventlists.add(match);
+						if(!eventlists.contains(event))
+							eventlists.add(event);
 					}
 				}
 				catch(Exception e)
