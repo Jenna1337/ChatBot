@@ -10,12 +10,15 @@ public abstract class JsonObject<T> implements Comparable<T>
 	 * @return A string containing all the instance variable names and their corresponding values.
 	 */
 	protected String varDumpAll(){
-		String result="ChatEvent[";
-		java.lang.reflect.Field[] fields = this.getClass().getDeclaredFields();
-		for(int i=0;i<fields.length-1;++i)
-			if(!Modifier.isStatic(fields[i].getModifiers()))
-				result+=varDump(fields[i])+",";
-		result+=varDump(fields[fields.length-1])+"]";
+		String result = this.getClass().getSimpleName()+"[";
+		Field[] fields = this.getClass().getDeclaredFields();
+		result += String.join(",", 
+					java.util.Arrays.stream(fields)
+						.filter(field->
+								!Modifier.isStatic(field.getModifiers())
+						).toArray(String[]::new)
+				);
+		result += "]";
 		return result;
 	}
 	/**
