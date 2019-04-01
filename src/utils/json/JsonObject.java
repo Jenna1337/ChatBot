@@ -16,7 +16,7 @@ public abstract class JsonObject<T> implements Comparable<T>
 					java.util.Arrays.stream(fields)
 						.filter(field->
 								!Modifier.isStatic(field.getModifiers())
-						).toArray(String[]::new)
+						).map(this::varDump).toArray(String[]::new)
 				);
 		result += "]";
 		return result;
