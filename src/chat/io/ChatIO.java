@@ -8,6 +8,8 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.security.sasl.AuthenticationException;
 import chat.ChatSite;
 import chat.events.ChatEventList;
@@ -243,6 +245,24 @@ public class ChatIO
 			}
 			catch(Exception e)
 			{
+				String errMsg = e.getMessage();
+				Matcher m = Pattern.compile("HTTP response code.*?(\\d+)").matcher(errMsg);
+				if(m.find()){
+					int httpcode;
+					switch(httpcode=Integer.parseInt(m.group(1))){
+						case 500:
+							System.out.println("The following chat encountered an internal server error: "+CHATSITE);
+							break;
+						case 503:
+							System.out.println("The following chat is currently unavailable: "+CHATSITE);
+							break;
+						default:
+							System.err.println("Encountered HTTP code "+httpcode+" on "+CHATSITE);
+							e.printStackTrace();
+							break;
+					}
+					return new ChatEventList();
+				}
 				System.err.println("Failed to get messages for "+CHATSITE);
 				e.printStackTrace();
 				return new ChatEventList();
