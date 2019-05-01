@@ -436,7 +436,7 @@ public abstract class EventHandler
 			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
 		};
 		Command eval = (ChatEvent event, String args)->{
-			ChatBot.replyToMessage(event, Utils.eval(args));
+			ChatBot.replyToMessageByEval(event, args);
 		};
 		Command room = (ChatEvent event, String args)->{
 			ChatBot.putMessage(event, MicroAssembler.assemble("\"https://"+event.getChatSite().getUrl()+"/rooms/$0", args));

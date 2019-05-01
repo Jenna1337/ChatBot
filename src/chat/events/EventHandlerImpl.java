@@ -58,7 +58,7 @@ public class EventHandlerImpl extends EventHandler
 					final String args = event.getContent().replace(
 							"@"+ChatBot.getMyUserName(), "").trim();
 					if(!args.isEmpty())
-						ChatBot.replyToMessage(event, Utils.eval(args));
+						ChatBot.replyToMessageByEval(event, args);
 				}
 				break;
 			case MessageFlagged://9

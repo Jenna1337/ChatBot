@@ -150,6 +150,19 @@ public class ChatBot
 	public static void replyToMessage(ChatEvent event, String message){
 		putMessage(event, ":"+event.getMessageId()+" "+message);
 	}
+	public static void replyToMessageByEval(ChatEvent event, String args){
+		String message = Utils.eval(args);
+		if(message.isEmpty() || message.matches("\\s*")){
+			double rngval = Math.random();
+			if(rngval>.98)
+				message = "\\u203D";
+			else if(rngval>.65)
+				message = "!?";
+			else
+				message = "?!";
+		}
+		putMessage(event, ":"+event.getMessageId()+" "+message);
+	}
 	/**
 	 * Gets the events to be handled from all chat sites.
 	 * @return a list containing all unread events
