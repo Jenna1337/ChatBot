@@ -125,6 +125,9 @@ public class ChatIO
 										{"email", email},
 										{"password", password},
 										{"fkey", fkey},
+										{"oauth_server", ""},
+										{"oauth_version", ""},
+										{"ssrc", "login"},
 									}));
 									//GET(search("var target = \'([^\']+)", response_text));
 									break loop;
