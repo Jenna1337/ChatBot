@@ -2,6 +2,7 @@ package utils.json;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import utils.Utils;
 
 public abstract class JsonObject<T> implements Comparable<T>
 {
@@ -31,7 +32,7 @@ public abstract class JsonObject<T> implements Comparable<T>
 		{
 			f.setAccessible(true);
 			Object o = f.get(this);
-			return result+o+"\"";
+			return result + Utils.escapeString(o.toString()) + "\"";
 		}
 		catch(IllegalArgumentException | IllegalAccessException
 				| SecurityException e)

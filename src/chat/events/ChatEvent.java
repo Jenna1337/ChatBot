@@ -10,6 +10,11 @@ import static utils.WebRequest.GET;
 
 public class ChatEvent extends JsonObject<ChatEvent>
 {
+	/**The raw JSON data<br>
+	 * Note: Used in {@link #toString()} and {@link #varDumpAll()}
+	 */
+	@SuppressWarnings("unused")
+	private final String rawEventJson;
 	/**The type of event.*/
 	private final EventType event_type;
 	/**The event's timestamp.*/
@@ -39,6 +44,7 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	
 	public ChatEvent(final String raweventjson, final ChatSite chatsite)
 	{
+		rawEventJson = raweventjson;
 		CHATSITE = chatsite;
 		event_type = EventType.forEventId(getNumValueJSON("event_type", raweventjson));
 		time_stamp = getNumValueJSON("time_stamp", raweventjson);
@@ -71,7 +77,8 @@ public class ChatEvent extends JsonObject<ChatEvent>
 	}
 	
 	/**
-	 * For debug purposes only.
+	 * For debug purposes only.<br>
+	 * @see {@link #varDumpAll()}
 	 */
 	@Override
 	public String toString(){
