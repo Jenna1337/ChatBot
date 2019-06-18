@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -429,15 +430,7 @@ public abstract class EventHandler
 					break;
 			}
 		};
-		/*Command echo = (ChatEvent event, String args)->{
-			ChatBot.putMessage(event, MicroAsmExamples.echo(args));
-		};*/
-		Command cointoss = (ChatEvent event, String args)->{
-			ChatBot.putMessage(event, MicroAsmExamples.cointoss(args));
-		};
-		Command eval = (ChatEvent event, String args)->{
-			ChatBot.replyToMessageByEval(event, args);
-		};
+		Command eval = ChatBot::replyToMessageByEval;
 		Command room = (ChatEvent event, String args)->{
 			ChatBot.putMessage(event, MicroAssembler.assemble("\"https://"+event.getChatSite().getUrl()+"/rooms/$0", args));
 		};
@@ -455,12 +448,24 @@ public abstract class EventHandler
 		builtincommands.put("rolldice", rolldice);
 		builtincommands.put("fibonacci", fibonacci);
 		builtincommands.put("rand", rand);
-		//builtincommands.put("echo", echo);
-		builtincommands.put("cointoss", cointoss);
-		builtincommands.put("coinflip", cointoss);
 		builtincommands.put("eval", eval);
 		builtincommands.put("room", room);
 		builtincommands.put("wotd", wotd);
+		
+		final String basiccmdsfname = "basic_commands.properties";
+		try{
+			Utils.loadProperties(basiccmdsfname).entrySet().stream().forEach((Map.Entry<Object, Object> entry)->{
+				Command cmd = (event, args)->{
+					ChatBot.putMessage(event, MicroAssembler.assemble(entry.getKey().toString(), MicroAssembler.escapeArgs(args)));
+				};
+				Arrays.stream(entry.getKey().toString().split(",| ")).forEach(entrycmdname->{
+					builtincommands.put(entrycmdname, cmd);
+				});
+			});
+		}
+		catch(IOException e){
+			System.err.println("Warning: Did not find \""+basiccmdsfname+"\", continuing anyways...");
+		}
 	}
 	/*Re-learns previously learned commands*/
 	{
