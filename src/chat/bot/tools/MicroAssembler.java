@@ -1,5 +1,6 @@
 package chat.bot.tools;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -66,10 +67,10 @@ public final class MicroAssembler{
 			String match_partial="";
 			{
 				final String n="none|nothing|null|nop",
-					l="(less|smaller)[-_ ]?(than)?",
-					e="equals?( to)?",
-					g="(more|greater)[-_ ]?(than)?",
-					o="( or)? ";
+						l="(less|smaller)[-_ ]?(than)?",
+						e="equals?( to)?",
+						g="(more|greater)[-_ ]?(than)?",
+						o="( or)? ";
 				final String symbol,tex,other;
 				switch(m){
 					case N:
@@ -118,10 +119,33 @@ public final class MicroAssembler{
 		public byte getMask(){return m;}
 		public String getReplTarget(){return repl_target;}
 	}
-	
-	//Reserved: ;!=+-*/?&|~<>#"$.\
-	//Operators: ;!=+-*/?&|~<>#".
-	//Special use in output: $;\
+	private static final String regex_escapeArgsString = "(" + String.join("|",
+			Arrays.stream(getCharacters_special_use_in_output()).map(
+					ch->("\\"+ch)).toArray(String[]::new)) + ")";
+	public static String escapeArgs(String args){
+		return args.replaceAll(regex_escapeArgsString, "\\\\$1");
+	}
+	/**
+	 * A read-only copy of the reserved characters.<br>
+	 * Reserved: ;!=+-*?/&|~<>#"$%.\
+	 **/
+	public static final String[] getCharacters_reserved(){
+		return ";!=+-*/?&|~<>#\"$%.\\".split("");
+	}
+	/**
+	 * A read-only copy of special use in output characters.<br>
+	 * Operators: ;!=+-*?/&|~<>#".
+	 **/
+	public static final String[] getCharacters_operators(){
+		return ";!=+-*?/&|~<>#\".".split("");
+	}
+	/**
+	 * A read-only copy of special use in output characters..<br>
+	 * Special use in output: $;\
+	 **/
+	public static final String[] getCharacters_special_use_in_output(){
+		return "$;\\".split("");
+	}
 	//Not used: ()[]{}%^,':_
 	//Purposely unused: @
 	private static final char ch_const='%';
@@ -232,120 +256,120 @@ public final class MicroAssembler{
 		}
 	}
 	Instruction[] instructions = new Instruction[]{
-		//Note: OUT has to be first to print all the other ops
-		/**The output instruction*/
-		new Instruction(op_out,Instruction.ParType.Text){
-			void action(Object[] args){
-				String txt = (String)args[0];
-				if(txt.matches(contregx)){
-					Matcher m = rpat.matcher(txt);
-					while(txt.matches(contregx)){
-						m.find();
-						char ch = m.group(1).charAt(0);
-						txt = txt.replace(rvalch+""+ch, ""+MicroAssembler.this.registers[correct(ch)]);
+			//Note: OUT has to be first to print all the other ops
+			/**The output instruction*/
+			new Instruction(op_out,Instruction.ParType.Text){
+				void action(Object[] args){
+					String txt = (String)args[0];
+					if(txt.matches(contregx)){
+						Matcher m = rpat.matcher(txt);
+						while(txt.matches(contregx)){
+							m.find();
+							char ch = m.group(1).charAt(0);
+							txt = txt.replace(rvalch+""+ch, ""+MicroAssembler.this.registers[correct(ch)]);
+						}
+					}
+					output+=txt;
+				}
+			},
+			/**The set data to a random value from 0 (inclusive) to arg2 (exclusive) instruction*/
+			new Instruction(op_rnd,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] = rand.nextInt((Integer)args[1]);
+				}
+			},
+			/**The move data instruction*/
+			new Instruction(op_mov,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] = (Integer)args[1];
+				}
+			},
+			/**The addition instruction*/
+			new Instruction(op_add,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] += (Integer)args[1];
+				}
+			},
+			/**The subtraction instruction*/
+			new Instruction(op_sub,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] -= (Integer)args[1];
+				}
+			},
+			/**The multiplication instruction*/
+			new Instruction(op_mul,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] *= (Integer)args[1];
+				}
+			},
+			/**The division instruction*/
+			new Instruction(op_div,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] /= (Integer)args[1];
+				}
+			},
+			/**The compare instruction*/
+			new Instruction(op_cmp,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					int val1 = registers[correct((Character)args[0])];
+					int val2 = (Integer)args[1];
+					if(val1>val2)
+						compval=ComparisonMask.GTR;
+					else if(val1<val2)
+						compval=ComparisonMask.LSS;
+					else if(val1==val2)
+						compval=ComparisonMask.EQU;
+					else
+						compval=ComparisonMask.NOP;
+				}
+			},
+			/**The bitwise AND instruction*/
+			new Instruction(op_and,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] &= (Integer)args[1];
+				}
+			},
+			/**The bitwise OR instruction*/
+			new Instruction(op_orr,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] |= (Integer)args[1];
+				}
+			},
+			/**The bitwise NOT instruction*/
+			new Instruction(op_not,Instruction.ParType.Alfa){
+				void action(Object[] args){
+					int r = correct((Character)args[0]);
+					registers[r] = ~registers[r];
+				}
+			},
+			/**The bit-shift left without carry instruction*/
+			new Instruction(op_lft,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] <<= (Integer)args[1];
+				}
+			},
+			/**The bit-shift right without carry instruction*/
+			new Instruction(op_rgt,Instruction.ParType.AlfaAlfanum){
+				void action(Object[] args){
+					registers[correct((Character)args[0])] >>>= (Integer)args[1];
+				}
+			},
+			/**The jump to label instruction*/
+			new Instruction(op_jmp,Instruction.ParType.NumWord){
+				void action(Object[] args){
+					int condition = (Integer)args[0];
+					if(condition==0)
+						return;
+					String target = ((String)args[1]).toLowerCase();
+					try{
+						int targetline = labels.get(target);
+						if((compval.getMask()&condition)>0)
+							proginstr = targetline;
+					}catch(NullPointerException npe){
+						throw new IllegalArgumentException("No line found with label \""+target+"\"");
 					}
 				}
-				output+=txt;
 			}
-		},
-		/**The set data to a random value from 0 (inclusive) to arg2 (exclusive) instruction*/
-		new Instruction(op_rnd,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] = rand.nextInt((Integer)args[1]);
-			}
-		},
-		/**The move data instruction*/
-		new Instruction(op_mov,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] = (Integer)args[1];
-			}
-		},
-		/**The addition instruction*/
-		new Instruction(op_add,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] += (Integer)args[1];
-			}
-		},
-		/**The subtraction instruction*/
-		new Instruction(op_sub,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] -= (Integer)args[1];
-			}
-		},
-		/**The multiplication instruction*/
-		new Instruction(op_mul,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] *= (Integer)args[1];
-			}
-		},
-		/**The division instruction*/
-		new Instruction(op_div,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] /= (Integer)args[1];
-			}
-		},
-		/**The compare instruction*/
-		new Instruction(op_cmp,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				int val1 = registers[correct((Character)args[0])];
-				int val2 = (Integer)args[1];
-				if(val1>val2)
-					compval=ComparisonMask.GTR;
-				else if(val1<val2)
-					compval=ComparisonMask.LSS;
-				else if(val1==val2)
-					compval=ComparisonMask.EQU;
-				else
-					compval=ComparisonMask.NOP;
-			}
-		},
-		/**The bitwise AND instruction*/
-		new Instruction(op_and,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] &= (Integer)args[1];
-			}
-		},
-		/**The bitwise OR instruction*/
-		new Instruction(op_orr,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] |= (Integer)args[1];
-			}
-		},
-		/**The bitwise NOT instruction*/
-		new Instruction(op_not,Instruction.ParType.Alfa){
-			void action(Object[] args){
-				int r = correct((Character)args[0]);
-				registers[r] = ~registers[r];
-			}
-		},
-		/**The bit-shift left without carry instruction*/
-		new Instruction(op_lft,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] <<= (Integer)args[1];
-			}
-		},
-		/**The bit-shift right without carry instruction*/
-		new Instruction(op_rgt,Instruction.ParType.AlfaAlfanum){
-			void action(Object[] args){
-				registers[correct((Character)args[0])] >>>= (Integer)args[1];
-			}
-		},
-		/**The jump to label instruction*/
-		new Instruction(op_jmp,Instruction.ParType.NumWord){
-			void action(Object[] args){
-				int condition = (Integer)args[0];
-				if(condition==0)
-					return;
-				String target = ((String)args[1]).toLowerCase();
-				try{
-					int targetline = labels.get(target);
-					if((compval.getMask()&condition)>0)
-						proginstr = targetline;
-				}catch(NullPointerException npe){
-					throw new IllegalArgumentException("No line found with label \""+target+"\"");
-				}
-			}
-		}
 	};
 	/**Return the index of the register referred to by the given character*/
 	private static int correct(char ch){
