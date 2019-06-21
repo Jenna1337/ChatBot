@@ -441,8 +441,8 @@ public abstract class EventHandler
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
 		builtincommands.put("asm", assembly);
-		builtincommands.put("learn", learn);
-		builtincommands.put("unlearn", unlearn);
+		//builtincommands.put("learn", learn);
+		//builtincommands.put("unlearn", unlearn);
 		builtincommands.put("joinroom", joinroom);
 		builtincommands.put("leaveroom", leaveroom);
 		builtincommands.put("rolldice", rolldice);
@@ -456,10 +456,10 @@ public abstract class EventHandler
 		try{
 			Utils.loadProperties(basiccmdsfname).entrySet().stream().forEach((Map.Entry<Object, Object> entry)->{
 				Command cmd = (event, args)->{
-					ChatBot.putMessage(event, MicroAssembler.assemble(entry.getKey().toString(), MicroAssembler.escapeArgs(args)));
+					ChatBot.putMessage(event, MicroAssembler.assemble(entry.getValue().toString(), MicroAssembler.escapeArgs(args)));
 				};
 				Arrays.stream(entry.getKey().toString().split(",| ")).forEach(entrycmdname->{
-					builtincommands.put(entrycmdname, cmd);
+					builtincommands.put(entrycmdname.toLowerCase(), cmd);
 				});
 			});
 		}
