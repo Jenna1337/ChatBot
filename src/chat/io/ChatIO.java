@@ -26,7 +26,7 @@ public class ChatIO
 {
 	private static final String protocol = "https";
 	private static final String fkeyHtmlRegex = "name=\"fkey\"\\s+(?>type=\"hidden\"\\s+)?value=\"([^\"]+)\"";
-	private static final String useridHtmlRegex = "id=\"active-user\" class=\"user-container user-(\\d+)\"";
+	private static final String useridHtmlRegex = "<\\s*span\\s+class\\s*=\\s*\"\\s*topbar-menu-links\\s*\"\\s*>\\s*<\\s*a\\s+href\\s*=\\s*\"\\/users\\/(\\d+)";
 	private static final String replStr = "\u007F";
 	private static final String replStrUrlEnc = urlencode(replStr);
 	private volatile String fkey;
@@ -52,13 +52,17 @@ public class ChatIO
 		};
 		WebRequest.setDefaultHeaders(headers);
 	}
-	public ChatIO(final ChatSite chatsite, final String email, final String password, Long[] longs) throws AuthenticationException, IllegalStateException
+	public ChatIO(final ChatSite chatsite, final String email, final String password, Long... longs) throws AuthenticationException, IllegalStateException
+	{
+		this(chatsite, email, password, true, longs);
+	}
+	public ChatIO(final ChatSite chatsite, final String email, final String password, boolean doChecks, Long... longs) throws AuthenticationException, IllegalStateException
 	{
 		login(chatsite, email, password);
 		if(!isLoggedIn())
 			throw new IllegalStateException("Not logged in to "+chatsite);
 		CHATSITE = chatsite;
-		String url = protocol+"://"+CHATSITE.getUrl()+"/rooms/" + longs[0];
+		String url = protocol+"://"+CHATSITE.getUrl()+"/rooms";
 		try
 		{
 			String response_text = GET(url);
@@ -68,24 +72,26 @@ public class ChatIO
 		catch(Exception e){
 			throw new AuthenticationException("Failed to get fkey from "+url, e);
 		}
-		try{
-			long myUserId=Long.parseLong(search(useridHtmlRegex, GET(url)));
-			System.out.println(CHATSITE.name()+" user id: "+myUserId);
-			me = new ChatUser(myUserId, CHATSITE);
-		}catch(Exception e){
-			new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
-		}
-		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){
-			public void run()
-			{
-				try{
-					logout();
-				}
-				catch(AuthenticationException e){
-					e.printStackTrace();
-				}
+		if(doChecks){
+			try{
+				long myUserId=Long.parseLong(search(useridHtmlRegex, GET(url)));
+				System.out.println(CHATSITE.name()+" user id: "+myUserId);
+				me = new ChatUser(myUserId, CHATSITE);
+			}catch(Exception e){
+				new AuthenticationException("Failed to get myUserId from "+url, e).printStackTrace();
 			}
-		}));
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable(){
+				public void run()
+				{
+					try{
+						logout();
+					}
+					catch(AuthenticationException e){
+						e.printStackTrace();
+					}
+				}
+			}));
+		}
 		this.initialRooms = new TreeSet<Long>(Arrays.asList(longs));
 		joinRoom(longs);
 	}
@@ -266,15 +272,14 @@ public class ChatIO
 					}
 					return new ChatEventList();
 				}
-				System.err.println("Failed to get messages for "+CHATSITE);
-				e.printStackTrace();
+				//System.err.println("Failed to get messages for "+CHATSITE);
+				//e.printStackTrace();
 				return new ChatEventList();
 			}
 		}
 	}
 	public void putMessage(final long roomid, final String message)
 	{
-		if(CHATSITE==ChatSite.METASTACKEXCHANGE && roomid!=1153) return;
 		if(message.trim().isEmpty()) return;
 		try
 		{
@@ -419,6 +424,25 @@ public class ChatIO
 			}
 			updateChatEventGetterStringCache();
 		}
+	}
+	public boolean rejoinFavoriteRooms(){
+		try
+		{
+			POST(protocol+"://"+CHATSITE.getUrl()+"/chats/join/favorite", urlencode(new String[][]{
+				{"fkey",fkey},
+				{"quiet", "true"},
+				{"immediate", "true"}
+			}), new String[][]{
+				{"Connection", "keep-alive"}
+			});
+			return true;
+		}
+		catch(IOException e)
+		{
+			System.out.println("Failed to join favorite rooms for "+CHATSITE);
+			e.printStackTrace();
+		}
+		return false;
 	}
 	public SortedSet<Long> getRoomSet()
 	{
