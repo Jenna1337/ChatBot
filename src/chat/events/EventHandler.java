@@ -350,6 +350,8 @@ public abstract class EventHandler
 			ChatBot.replyToMessage(event, message);
 		};
 		Command learn = (ChatEvent event, String args)->{
+			ChatBot.replyToMessage(event, "This command is disabled until further notice.");
+			/*
 			if(!args.isEmpty() && args.contains(" ")){
 				String[] args2 = args.split(" ", 2);
 				final String name = args2[0];
@@ -361,8 +363,11 @@ public abstract class EventHandler
 			}
 			else{
 			}
+			*/
 		};
 		Command unlearn = (ChatEvent event, String args)->{
+			ChatBot.replyToMessage(event, "This command is disabled until further notice.");
+			/*
 			if(removeCommand(args))
 				ChatBot.replyToMessage(event, "Forgot command: "+args);
 			else
@@ -372,6 +377,7 @@ public abstract class EventHandler
 				else
 					ChatBot.replyToMessage(event, ErrorMessages.getErrorText(event, ErrorType.CMD_NOTFOUND));
 			}
+			*/
 		};
 		Command joinroom = (ChatEvent event, String args)->{
 			ChatSite site = event.getChatSite();
@@ -441,8 +447,8 @@ public abstract class EventHandler
 		builtincommands.put("list", listcommands);
 		builtincommands.put("listcommands", listcommands);
 		builtincommands.put("asm", assembly);
-		//builtincommands.put("learn", learn);
-		//builtincommands.put("unlearn", unlearn);
+		builtincommands.put("learn", learn);
+		builtincommands.put("unlearn", unlearn);
 		builtincommands.put("joinroom", joinroom);
 		builtincommands.put("leaveroom", leaveroom);
 		builtincommands.put("rolldice", rolldice);
