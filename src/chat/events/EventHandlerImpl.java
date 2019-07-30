@@ -1,25 +1,48 @@
 package chat.events;
 
-import static utils.WebRequest.POST;
 import java.util.Vector;
 import chat.ChatSite;
 import chat.bot.ChatBot;
 import utils.Utils;
-import static utils.Utils.urlencode;
 
 public class EventHandlerImpl extends EventHandler
 {
-	private static final int recenteventbuffersize = 30;
-	private static Vector<Long> recentevents = new Vector<>(recenteventbuffersize);
+	static private class EventIdTimePairList extends Vector<EventIdTimePair>{
+		public EventIdTimePairList(int initialCapacity, int capacityIncrement){
+			super(initialCapacity, capacityIncrement);
+		}
+		
+		boolean contains(ChatEvent event){
+			return this.stream().anyMatch((pair)->{
+				return event.getId() == pair.getEventId();
+			});
+		}
+		
+		public void add(ChatEvent event){
+			add(new EventIdTimePair(event.getId(), event.getTimeStamp()));
+		}
+	}
+	private static final int recenteventsinitialcapacity = 30;
+	private static final int recenteventsinitialcapacityincrement = 10;
+	/**
+	 * The list of events that have already been handled. 
+	 */
+	private static EventIdTimePairList recentevents = new EventIdTimePairList(recenteventsinitialcapacity, recenteventsinitialcapacityincrement);
+	/**
+	 * Maximum age to keep messages in the {@link #recentevents} list, in milliseconds. 
+	 * 5 * second * minute
+	 */
+	private static long maxEventAgeMillis = 5 * 1000 * 60;
 	private static synchronized boolean previouslyHandled(final ChatEvent event)
 	{
 		//Check if this event was already handled
-		if(recentevents.contains(event.getId()))
+		if(recentevents.contains(event))
 			return true;
 		
-		if(recentevents.size()>=recenteventbuffersize)
-			recentevents.remove(0);
-		recentevents.add(event.getId());
+		recentevents.removeIf((eventIdTimePair)->{
+			return (Utils.getUnixTimeMillis() - eventIdTimePair.getTimestamp()) > maxEventAgeMillis;
+		});
+		recentevents.add(event);
 		return false;
 	}
 	public synchronized void handle(final ChatEvent event)
@@ -115,5 +138,23 @@ public class EventHandlerImpl extends EventHandler
 				System.err.println("Unknown event type" + event.toString());
 				break;
 		}
+	}
+}
+class EventIdTimePair{
+	private final long eventid, timestamp;
+	public EventIdTimePair(long eventid, long timestamp){
+		this.eventid=eventid;
+		this.timestamp=timestamp;
+	}
+	public long getEventId(){
+		return eventid;
+	}
+	public long getTimestamp(){
+		return timestamp;
+	}
+	@Override
+	public boolean equals(Object obj){
+			return obj.getClass().equals(this.getClass())
+					&& (this.getEventId() == ((EventIdTimePair)obj).getEventId());
 	}
 }
