@@ -15,6 +15,7 @@ import chat.ChatSite;
 import chat.events.ChatEventList;
 import chat.users.ChatUser;
 import chat.users.ChatUserList;
+import utils.Utils;
 import utils.WebRequest;
 import utils.js.JavaScriptArray;
 import static utils.Utils.search;
@@ -278,15 +279,19 @@ public class ChatIO
 			}
 		}
 	}
+	private static final String needMoreRepRegex = "id\\s*=\\s*\"bubble\"\\s*>\\s*You must have";
 	public void putMessage(final long roomid, final String message)
 	{
 		if(message.trim().isEmpty()) return;
 		try
 		{
-			POST(protocol+"://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
-				{"fkey", fkey},
-				{"text", message}
-			}));
+			if(!Utils.containsRegex(needMoreRepRegex, GET(protocol+"://"+CHATSITE.getUrl()+"/rooms/"+roomid)))
+				POST(protocol+"://"+CHATSITE.getUrl()+"/chats/"+roomid+"/messages/new", urlencode(new String[][]{
+					{"fkey", fkey},
+					{"text", message}
+				}));
+			else
+				System.out.println("Notice: Not enough reputation to send message to room "+roomid+" on site "+CHATSITE);
 		}
 		catch(Exception e)
 		{
