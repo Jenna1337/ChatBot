@@ -59,15 +59,17 @@ public class ChatEvent extends JsonObject<ChatEvent>
 		target_user_id = getNumValueJSON("target_user_id", raweventjson);
 		
 		String plaincontent = null;
-		try{
-			plaincontent = GET("https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id+"?plain=true");
-		}
-		catch(Exception e1){
+		if(message_id!=0){
 			try{
-				plaincontent = unescapeHtml(getStringValueJSON("content", raweventjson));
-			}catch(Exception e3){
-				System.err.println("Full Erroring text:\n"+raweventjson);
-				plaincontent="";
+				plaincontent = GET("https://"+CHATSITE.getUrl()+"/messages/"+room_id+'/'+message_id+"?plain=true");
+			}
+			catch(Exception e1){
+				try{
+					plaincontent = unescapeHtml(getStringValueJSON("content", raweventjson));
+				}catch(Exception e3){
+					System.err.println("Full Erroring text:\n"+raweventjson);
+					plaincontent="";
+				}
 			}
 		}
 		
