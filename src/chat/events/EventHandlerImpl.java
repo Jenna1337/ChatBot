@@ -4,6 +4,7 @@ import java.util.Vector;
 import chat.ChatSite;
 import chat.bot.ChatBot;
 import utils.Utils;
+import utils.WebRequest;
 
 public class EventHandlerImpl extends EventHandler
 {
@@ -101,10 +102,7 @@ public class EventHandlerImpl extends EventHandler
 			case UserNotification://16
 				System.out.println("Handling event "+event.toString());
 				try{
-					//TODO acknowledge notification 
-					/*POST("https://chat.stackoverflow.com/messages/ack", urlencode(new String[][]{
-						{"id", ""+event.getMessageId()}
-					}));*/
+					WebRequest.GET("https://stackoverflow.com/topbar/inbox?_="+Utils.getUnixTimeMillis());
 				}catch(Exception e){
 					e.printStackTrace();
 				}
