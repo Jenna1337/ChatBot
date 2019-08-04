@@ -120,7 +120,7 @@ public class ChatUser extends JsonObject<ChatUser>
 		last_post=getNumValueJSON("last_post", rawjson);
 		last_seen=getNumValueJSON("last_seen", rawjson);
 		try{
-			String response = GET("https://chat.stackexchange.com/users/thumbs/"+id);
+			String response = GET("https://"+chatsite.getUrl()+"/users/thumbs/"+id);
 			user_message = getStringValueJSON("user_message", response);
 			usage = getStringValueJSON("usage", response);
 			//TODO are these required?
