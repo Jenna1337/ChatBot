@@ -184,13 +184,13 @@ public class ChatIO
 			synchronized(lock_logged_in){
 				if(!logged_in)
 					throw new IllegalStateException("Not logged in.");
-				rooms.forEach(this::leaveRoom);
-				//leaveRoom(rooms.toArray(new Long[0]));
+				GET(protocol + "://" + CHATSITE.getUrl() + "/chats/leave/all");
+				
 				String response_text = GET("https://stackoverflow.com/users/logout");
 				String fkey = search(fkeyHtmlRegex, response_text);
-				POST(protocol+"://stackoverflow.com/users/logout", urlencode(new String[][]{
+				POST(protocol+"://"+CHATSITE.getUrl()+"/users/logout", urlencode(new String[][]{
 					{"fkey", fkey},
-					{"returnUrl", "https%3A%2F%2Fstackoverflow.com%2F"}
+					{"returnUrl", protocol+"://"+CHATSITE.getUrl()+"/"}
 				}));
 				logged_in=false;
 			}
