@@ -27,12 +27,15 @@ public abstract class JsonObject<T> implements Comparable<T>
 	 * @return A string containing the variable's name and its corresponding values.
 	 */
 	protected String varDump(Field f){
-		String result="\""+f.getName()+"\":\"";
+		String result="\""+f.getName()+"\":";
 		try
 		{
 			f.setAccessible(true);
 			Object o = f.get(this);
-			return result + Utils.escapeString(o.toString()) + "\"";
+			return result + "\""+ Utils.escapeString(o.toString()) + "\"";
+		}
+		catch(NullPointerException npe){
+			return result + "null";
 		}
 		catch(IllegalArgumentException | IllegalAccessException
 				| SecurityException e)
