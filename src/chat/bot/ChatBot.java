@@ -44,7 +44,8 @@ public class ChatBot
 					try{
 						siterooms=s.split(",");
 					}catch(Exception e){
-						throw new IllegalArgumentException(e);
+						siterooms=new String[0];
+						//throw new IllegalArgumentException(e);
 					}
 			}
 			Long[] rooms = new Long[siterooms.length];
