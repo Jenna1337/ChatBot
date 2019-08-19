@@ -165,28 +165,7 @@ public abstract class EventHandler
 				System.out.println("Command timed out.");
 				try
 				{
-					Thread.State s = thread.getState();
-					switch(s)
-					{
-						case NEW:
-							throw new InternalError("Thread not started.");
-						case BLOCKED:
-						case RUNNABLE:
-						case TIMED_WAITING:
-						case WAITING:
-							//Interrupt the thread
-							thread.interrupt();
-							Thread.sleep(1000);
-							if(thread.isAlive()){
-								//Kill thread
-								thread.stop();
-							}
-							break;
-						case TERMINATED:
-							break;
-						default:
-							throw new InternalError("Unknown thread state: " + s.name());
-					}
+					Utils.forceKillThread(thread);
 				}
 				catch(IllegalArgumentException | InterruptedException e)
 				{
@@ -363,7 +342,7 @@ public abstract class EventHandler
 			}
 			else{
 			}
-			*/
+			 */
 		};
 		Command unlearn = (ChatEvent event, String args)->{
 			ChatBot.replyToMessage(event, "This command is disabled until further notice.");
@@ -377,7 +356,7 @@ public abstract class EventHandler
 				else
 					ChatBot.replyToMessage(event, ErrorMessages.getErrorText(event, ErrorType.CMD_NOTFOUND));
 			}
-			*/
+			 */
 		};
 		Command joinroom = (ChatEvent event, String args)->{
 			ChatSite site = event.getChatSite();
