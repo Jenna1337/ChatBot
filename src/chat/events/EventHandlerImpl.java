@@ -77,6 +77,7 @@ public class EventHandlerImpl extends EventHandler
 				break;
 			case UserMentioned://8
 			case MessageReply://18
+				ChatBot.acknowledge(event);
 				if(!runCommand(event))
 				{
 					final String args = event.getContent().replace(

@@ -164,6 +164,10 @@ public class ChatBot
 		}
 		putMessage(event, ":"+event.getMessageId()+" "+message);
 	}
+	public static void acknowledge(ChatEvent event){
+		ChatIO io = chatio.get(event.getChatSite());
+		io.acknowledge(event.getMessageId());
+	}
 	/**
 	 * Gets the events to be handled from all chat sites.
 	 * @return a list containing all unread events

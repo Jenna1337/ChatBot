@@ -531,4 +531,16 @@ public class ChatIO
 	public ChatUser getMyUserInstance(){
 		return me;
 	}
+	public void acknowledge(long messageId){
+		try{
+			WebRequest.POST(protocol+"://"+CHATSITE.getUrl()+"/messages/ack",Utils.urlencode(new String[][]{
+				{"id",""+messageId},
+				{"fkey",fkey}
+			}));
+		}
+		catch(IOException e){
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }
