@@ -17,6 +17,7 @@ import chat.io.ErrorMessages;
 import chat.io.ErrorMessages.ErrorType;
 import chat.users.ChatUser;
 import utils.Utils;
+import utils.eval.EvalResult;
 
 public class ChatBot
 {
@@ -152,7 +153,9 @@ public class ChatBot
 		putMessage(event, ":"+event.getMessageId()+" "+message);
 	}
 	public static void replyToMessageByEval(ChatEvent event, String args){
-		String message = Utils.eval(args);
+		EvalResult result = Utils.eval(args);
+		//TODO use the rest of result somewhere
+		String message = result.getResultDefault();
 		if(message.isEmpty() || message.matches("\\s*")){
 			double rngval = Math.random();
 			if(rngval>.98)
